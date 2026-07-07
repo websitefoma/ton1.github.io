@@ -1,0 +1,542 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=105293610', 'ym');
+
+    ym(105293610, 'init', {ssr:true, clickmap:true, ecommerce:"dataLayer", accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/105293610" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VelRoll - Twitch Чат Рулетка</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style6fm.css">
+<base target="_blank">
+<base target="_blank">
+<base target="_blank">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-gradient">
+                <div class="header-content">
+                    <div class="logo">
+                        <div class="logo-icon">
+                            <i class="fas fa-dice"></i>
+                        </div>
+                        <div class="logo-text">
+                            <h1>VelRoll</h1>
+                            <p class="tagline">Twitch Чат Рулетка (Включайте аппаратное ускорение в браузере, чтобы не было лагов) <span class="warning-badge">история подписок временно не работает, из-за ограничений твича</span></p>
+                        </div>
+                    </div>
+                    <a target="_blank" class="header-banner-link">
+    <img src="empty.PNG" alt="Banner" class="header-banner">
+</a>
+<div class="version-badge">
+    <span>v0.9</span>
+</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <section class="control-section">
+                <div class="panel glass-panel">
+                    <div class="panel-header">
+                        <i class="fas fa-sliders-h"></i>
+                        <h2>Управление розыгрышем</h2>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="streamerName">
+                            <i class="fas fa-user"></i>
+                            Никнейм стримера
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-at"></i>
+                            <input type="text" id="streamerName" placeholder="Введите никнейм стримера" value="veigardi">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="keyword">
+                            <i class="fas fa-key"></i>
+                            Ключевое слово для участия
+                        </label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-hashtag"></i>
+                            <input type="text" id="keyword" placeholder="Введите ключевое слово" value="розыгрыш">
+                        </div>
+                    </div>
+                    
+
+                    <div class="button-group">
+    <button id="connectBtn" class="btn-primary">
+        <i class="fas fa-plug"></i>
+        <span>Начать Отбор</span>
+    </button>
+    <button id="disconnectBtn" class="btn-secondary" style="display: none;">
+        <i class="fas fa-power-off"></i>
+        <span>Откл.</span>
+    </button>
+    <button id="firstMsgToggleBtn" class="btn-fm" title="Только первое сообщение: при включении в розыгрыше участвуют только те, кто впервые пишет на канале">
+        <span class="fm-label">FM</span>
+    </button>
+    <button id="subOnlyToggleBtn" class="btn-sub" title="Только подписчики: при включении в розыгрыше участвуют только платные подписчики канала (сабы)">
+        <span class="sub-label">SUB</span>
+    </button>
+</div>
+<input type="checkbox" id="firstMsgOnlyToggle" style="display: none;">
+<input type="checkbox" id="subOnlyToggle" style="display: none;">
+                    <div id="status" class="status-message disconnected">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Введите никнейм стримера и ключевое слово, затем нажмите "Начать Отбор"</span>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="participantsCount">0</span>
+                                <span class="stat-label">Участников</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="totalMessagesCount">0</span>
+                                <span class="stat-label">Сообщений</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="connectionTime">0:00</span>
+                                <span class="stat-label">Время работы</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="startRouletteBtn" class="btn-success" disabled>
+                        <i class="fas fa-play"></i>
+                        <span>Начать розыгрыш - Рулетка</span>
+                    </button>
+
+                    <button id="startVaseRouletteBtn" class="btn-warning" disabled>
+                        <i class="fas fa-gift"></i>
+                        <span>Начать розыгрыш - Вазы</span>
+                    </button>
+
+                    <button id="startCsRouletteBtn" class="btn-cs" disabled>
+                        <i class="fas fa-crosshairs"></i>
+                        <span>Начать розыгрыш - КС</span>
+                    </button>
+                    <button class="btn-cube-gif" disabled>
+    <img src="/reccc3.gif" alt="Пиксель Рояль" class="cube-gif-image">
+</button>
+                </div>
+            </section>
+
+            <section class="chat-section">
+                <div class="panel glass-panel">
+                    <div class="panel-header winner-header">
+                        <div class="winner-title">
+    <i class="fas fa-crown"></i>
+    <h2 id="winnerUsernameDisplay">Чат победителя</h2>
+
+</div>
+                        <div class="winner-badge" id="winnerBadge" style="display: none;">
+                            <span></span>
+                        </div>
+                    </div>
+                    <div id="winnerMessages" class="messages-container empty-state">
+                        <i class="fas fa-comment-slash"></i>
+                        <p>Сообщения победителя появятся здесь</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="participants-section">
+                <div class="panel glass-panel">
+                    <div class="panel-header">
+                        <i class="fas fa-list"></i>
+                        <h2>Участники розыгрыша</h2>
+                    </div>
+                    <div id="usersList" class="participants-list empty-state">
+                        <i class="fas fa-user-plus"></i>
+                        <p>Участники появятся здесь после написания ключевого слова в чате</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+    <div class="footer-content">
+        <p>
+            &copy; 2025-2026 VelRoll Twitch
+            <span class="footer-divider">|</span>
+            <a href="https://www.twitch.tv/veigardi" class="twitch-link" target="_blank">
+                <i class="fab fa-twitch"></i>
+                Velgardi
+            </a>
+        </p>
+    </div>
+</footer>
+    </div>
+
+    <div class="roulette-modal" id="rouletteSection">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="roulette-container">
+                <div class="roulette-header">
+                    <h3>Розыгрыш начался!</h3>
+                    <p>Крутите рулетку для выбора победителя</p>
+                </div>
+                
+                <div class="roulette-wheel-container">
+                    <div class="roulette-wheel" id="rouletteWheel"></div>
+                    <div class="roulette-pointer">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                </div>
+
+                <div class="roulette-controls">
+                    <button id="spinRouletteBtn" class="btn-primary">
+                        <i class="fas fa-redo"></i>
+                        <span>Крутить рулетку</span>
+                    </button>
+                    <button id="closeRouletteBtn" class="btn-secondary">
+                        <i class="fas fa-times"></i>
+                        <span>Закрыть</span>
+                    </button>
+                </div>
+
+                <div class="roulette-winner" id="rouletteWinner">
+                    <div class="winner-celebration">
+                        <div class="confetti"></div>
+                        <div class="confetti"></div>
+                        <div class="confetti"></div>
+                    </div>
+                    <div class="winner-avatar" id="winnerAvatar">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="winner-info">
+                        <div class="winner-name" id="winnerName">Победитель</div>
+                        <div class="winner-text">Поздравляем с победой в розыгрыше!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="vase-roulette-modal" id="vaseRouletteSection">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="vase-container">
+                <div class="vase-header">
+                    <h3>Розыгрыш вазами!</h3>
+                    <p>Кликайте на вазы, чтобы разбить их и найти победителя</p>
+                </div>
+                
+                <div class="vases-grid" id="vasesGrid">
+                </div>
+
+                <div class="vase-controls">
+                    <button id="closeVaseRouletteBtn" class="btn-secondary">
+                        <i class="fas fa-times"></i>
+                        <span>Закрыть</span>
+                    </button>
+                </div>
+
+                <div class="vase-winner-display" id="vaseWinnerDisplay">
+                    <div class="winner-celebration">
+                        <div class="confetti"></div>
+                        <div class="confetti"></div>
+                        <div class="confetti"></div>
+                    </div>
+                    <div class="vase-winner-avatar" id="vaseWinnerAvatar">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="winner-info">
+                        <div class="winner-name" id="vaseWinnerName">Победитель</div>
+                        <div class="winner-text">Поздравляем с победой в розыгрыше!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="cs-roulette-modal" id="csRouletteSection">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="cs-container">
+            <div class="cs-header">
+                <h3>Розыгрыш через Counter-Strike</h3>
+                <p>Из списка ниже выбираются 10 человек, из которых выиграет только 1</p>
+            </div>
+            
+            <div class="participants-grid" id="csParticipantsGrid">
+           
+            </div>
+
+            <div class="cs-content">
+                <div class="team-column team-terrorist">
+                    <div class="team-header">TERRORISTS</div>
+                    <div class="player-with-marker">
+                        <div class="player-marker">6</div>
+                        <div class="team-player" id="terroristPlayer1"></div>
+                    </div>
+                    <div class="player-with-marker">
+                        <div class="player-marker">7</div>
+                        <div class="team-player" id="terroristPlayer2"></div>
+                    </div>
+                    <div class="player-with-marker">
+                        <div class="player-marker">8</div>
+                        <div class="team-player" id="terroristPlayer3"></div>
+                    </div>
+                    <div class="player-with-marker">
+                        <div class="player-marker">9</div>
+                        <div class="team-player" id="terroristPlayer4"></div>
+                    </div>
+                    <div class="player-with-marker">
+                        <div class="player-marker">0</div>
+                        <div class="team-player" id="terroristPlayer5"></div>
+                    </div>
+                </div>
+                
+                <div class="cs-video-container">
+                    <video 
+    class="cs-video" 
+    id="csVideo" 
+    preload="none"         
+    crossorigin="anonymous"
+>
+    <source src="cs1.webm" type="video/webm">
+    Ваш браузер не поддерживает webm тег.
+</video>
+                    
+                    
+                    <div class="cs-winner-display-overlay" id="csWinnerDisplay">
+                        <div class="winner-celebration">
+                            <div class="confetti"></div>
+                            <div class="confetti"></div>
+                            <div class="confetti"></div>
+                        </div>
+                        <div class="cs-winner-avatar-overlay" id="csWinnerAvatar">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="winner-info-overlay">
+                            <div class="winner-name-overlay" id="csWinnerName">Победитель</div>
+                            <div class="winner-text-overlay">Поздравляем <span class="winner-username"></span> с победой в розыгрыше!</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="team-column team-counter">
+                    <div class="team-header">COUNTER-TERRORISTS</div>
+                    <div class="player-with-marker">
+                        <div class="player-marker">1</div>
+                        <div class="team-player" id="counterPlayer1"></div>
+                    </div>
+                    <div class="player-with-marker">
+                        <div class="player-marker">2</div>
+                        <div class="team-player" id="counterPlayer2"></div>
+                    </div>
+                    <div class="player-with-marker">
+                        <div class="player-marker">3</div>
+                        <div class="team-player" id="counterPlayer3"></div>
+                    </div>
+                    <div class="player-with-marker">
+                        <div class="player-marker">4</div>
+                        <div class="team-player" id="counterPlayer4"></div>
+                    </div>
+                    <div class="player-with-marker">
+                        <div class="player-marker">5</div>
+                        <div class="team-player" id="counterPlayer5"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cs-controls">
+                <button id="startCsSelectionBtn" class="btn-primary">
+                    <i class="fas fa-play"></i>
+                    <span>Начать отбор</span>
+                </button>
+                <button id="closeCsRouletteBtn" class="btn-secondary">
+                    <i class="fas fa-times"></i>
+                    <span>Закрыть</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="cube-battle-modal" id="cubeBattleSection" style="display: none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="cube-battle-container">
+            <div class="cube-battle-header">
+                <h3>⚔️ Пиксель Рояль</h3>
+                <p>Top-Down баттл рояль! Последний выживший побеждает!</p>
+                <div class="cube-battle-stats">
+                    <span id="cubeBattleAlive" class="alive-count">Выживших: 0</span>
+                    <span id="cubeBattleEliminated" class="eliminated-count">Уничтожено: 0</span>
+                </div>
+            </div>
+            
+            <div class="cube-battle-arena" id="cubeBattleArena">
+                <canvas id="cubeBattleCanvas"></canvas>
+                <div class="battle-overlay">
+                    <div class="battle-controls-hint">
+                        <span class="key">WASD</span> — камера | 
+                        <span class="key">Мышь</span> — перетаскивание | 
+                        <span class="key">Колёсико</span> — зум
+                    </div>
+                </div>
+            </div>
+
+            <div class="cube-battle-controls">
+                <button id="startCubeBattleBtn" class="btn-primary btn-start-battle">
+                    <i class="fas fa-play"></i>
+                    <span>Начать Бой!</span>
+                </button>
+                <button id="closeCubeBattleBtn" class="btn-secondary">
+                    <i class="fas fa-times"></i>
+                    <span>Закрыть</span>
+                </button>
+            </div>
+
+            <div class="cube-battle-winner" id="cubeBattleWinner" style="display: none;">
+                <div class="winner-celebration">
+                    <div class="confetti"></div>
+                    <div class="confetti"></div>
+                    <div class="confetti"></div>
+                    <div class="confetti"></div>
+                    <div class="confetti"></div>
+                </div>
+                <div class="cube-winner-avatar" id="cubeWinnerAvatar">👑</div>
+                <div class="winner-info">
+                    <div class="winner-name" id="cubeWinnerName">Победитель</div>
+                    <div class="winner-text">Король арены! Последний выживший!</div>
+                    <div class="winner-stats" id="cubeWinnerStats">Уничтожено врагов: 0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/pixbattle.js"></script>
+
+    <script src="js/aps76fm.js"></script>
+<script src="js/winner-time3fol.js"></script>
+<script src="js/twitch-user-info.js"></script>
+<style>
+.btn-cube-gif {
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+    overflow: visible;
+}
+
+.btn-cube-gif::before {
+    display: none;
+}
+
+.btn-cube-gif:hover:not(:disabled) {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+}
+
+.btn-cube-gif:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.btn-cube-gif:disabled {
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+.cube-gif-image {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 52px;
+    object-fit: contain;
+    display: block;
+    border-radius: 10px;
+}
+.footer-content p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.footer-divider {
+    color: rgba(255, 255, 255, 0.3);
+    margin: 0 4px;
+}
+
+.twitch-link {
+    color: #9146FF; 
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.twitch-link:hover {
+    color: #b8a0ff;
+    transform: translateY(-1px);
+}
+
+.twitch-link i {
+    font-size: 1.1em;
+}
+.twitch-link,
+.twitch-link i {
+    color: #9146FF !important; 
+}
+
+.warning-badge {
+    display: inline-block;
+    background: #e74c3c;
+    color: #ffffff;
+    padding: 0px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-left: 0px;
+    vertical-align: middle;
+    text-shadow: none;
+}
+</style>
+</body>
+</html>
