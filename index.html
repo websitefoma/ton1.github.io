@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ton1Mark Раздача — розыгрыши в чате</title>
+<title>Twitch Раздача — розыгрыши в чате</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
 
 <!-- Bootstrap 5 CSS с CDN -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -22,7 +23,10 @@
   }
 
   body{
-    background: radial-gradient(circle at top left, #241a38 0%, #0e0b16 55%, #0a0810 100%);
+    background:
+      linear-gradient(rgba(10,8,16,0.82), rgba(10,8,16,0.88)),
+      url('123.webp') center center / cover no-repeat fixed,
+      radial-gradient(circle at top left, #241a38 0%, #0e0b16 55%, #0a0810 100%);
     background-attachment: fixed;
     color: #e9e6f2;
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -272,6 +276,7 @@
   #modalChatFeed .feed-line.is-winner .feed-name{
     color: var(--twitch-glow);
   }
+
 </style>
 </head>
 
@@ -298,12 +303,18 @@
 
           <div class="mb-3">
             <label class="form-label" for="channelInput">Канал (никнейм стримера)</label>
-            <input type="text" class="form-control" id="channelInput" placeholder="например: Ton1Mark">
+            <input type="text" class="form-control" id="channelInput" placeholder="например: mustashh">
           </div>
 
           <div class="mb-3">
             <label class="form-label" for="keywordInput">Ключевое слово для участия</label>
             <input type="text" class="form-control" id="keywordInput" value="розыгрыш">
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="noKeywordCheck">
+              <label class="form-check-label small" for="noKeywordCheck">
+                Без ключевого слова (участвует любой, кто написал что-угодно в чат)
+              </label>
+            </div>
           </div>
 
           <div class="mb-3">
@@ -449,6 +460,7 @@ const LS_HISTORY_KEY = 'twitchRaffle_history'; // ключ для истории
 let tmiClient = null;                 // текущий клиент tmi.js
 let currentChannel = '';              // канал, к которому подключены (в нижнем регистре, без #)
 let currentKeyword = '';              // ключевое слово для участия (в нижнем регистре)
+let currentNoKeywordMode = false;     // true = в розыгрыше участвует любой, кто написал что угодно
 let participants = new Map();         // username -> { displayName }
 let autoRefreshTimer = null;          // таймер автообновления истории (каждые 5 сек)
 let wheelRotation = 0;                // текущий накопленный угол поворота колеса (градусы)
@@ -458,6 +470,7 @@ let winnerWatch = null;               // { username, displayName, startTimestamp
 // ---------- Ссылки на DOM-элементы ----------
 const channelInput = document.getElementById('channelInput');
 const keywordInput = document.getElementById('keywordInput');
+const noKeywordCheck = document.getElementById('noKeywordCheck');
 const cooldownInput = document.getElementById('cooldownInput');
 const connectBtn = document.getElementById('connectBtn');
 const disconnectBtn = document.getElementById('disconnectBtn');
@@ -618,10 +631,11 @@ function renderHistory() {
     const responseHtml = entry.responseTimeSeconds != null
       ? `<span class="badge bg-success bg-opacity-25 text-success border border-success mt-1"><i class="bi bi-stopwatch"></i> Ответил за ${entry.responseTimeSeconds.toFixed(1)} сек</span>`
       : `<span class="badge bg-secondary bg-opacity-25 text-secondary border border-secondary mt-1"><i class="bi bi-hourglass-split"></i> Ответ не зафиксирован</span>`;
+    const keywordLabel = entry.keyword ? `«${escapeHtml(entry.keyword)}»` : 'без ключевого слова';
     item.innerHTML = `
       <div class="win-name"><i class="bi bi-trophy-fill"></i> ${escapeHtml(entry.displayName)}</div>
       <div class="small text-secondary">
-        Канал: ${escapeHtml(entry.channel)} · Ключевое слово: «${escapeHtml(entry.keyword)}»
+        Канал: ${escapeHtml(entry.channel)} · Ключевое слово: ${keywordLabel}
       </div>
       <div class="small text-secondary mb-1">${formatDate(entry.timestamp)}</div>
       ${responseHtml}
@@ -895,18 +909,20 @@ function setStatus(state, text) {
 async function connectToChat() {
   const channel = channelInput.value.trim().toLowerCase().replace(/^#/, '');
   const keyword = keywordInput.value.trim().toLowerCase();
+  const noKeywordMode = noKeywordCheck.checked;
 
   if (!channel) {
     log('Укажите никнейм канала перед подключением.', 'warn');
     return;
   }
-  if (!keyword) {
-    log('Укажите ключевое слово перед подключением.', 'warn');
+  if (!noKeywordMode && !keyword) {
+    log('Укажите ключевое слово перед подключением (или включите режим "без ключевого слова").', 'warn');
     return;
   }
 
   currentChannel = channel;
-  currentKeyword = keyword;
+  currentNoKeywordMode = noKeywordMode;
+  currentKeyword = noKeywordMode ? '' : keyword;
 
   const anonNick = 'justinfan' + Math.floor(10000 + Math.random() * 90000);
 
@@ -957,7 +973,11 @@ async function connectToChat() {
       }
     }
 
-    if (text.includes(currentKeyword)) {
+    // Участником становится либо любой написавший (режим "без ключевого слова"),
+    // либо только те, чьё сообщение содержит ключевое слово.
+    const qualifies = currentNoKeywordMode || text.includes(currentKeyword);
+
+    if (qualifies) {
       const username = msgUsername;
       const displayName = msgDisplayName;
 
@@ -980,6 +1000,7 @@ async function connectToChat() {
     disconnectBtn.disabled = false;
     channelInput.disabled = true;
     keywordInput.disabled = true;
+    noKeywordCheck.disabled = true;
   });
 
   tmiClient.on('disconnected', (reason) => {
@@ -989,7 +1010,8 @@ async function connectToChat() {
     connectBtn.disabled = false;
     disconnectBtn.disabled = true;
     channelInput.disabled = false;
-    keywordInput.disabled = false;
+    keywordInput.disabled = noKeywordCheck.checked;
+    noKeywordCheck.disabled = false;
   });
 
   try {
@@ -1080,6 +1102,12 @@ function drawWinner() {
 connectBtn.addEventListener('click', connectToChat);
 disconnectBtn.addEventListener('click', disconnectFromChat);
 drawBtn.addEventListener('click', drawWinner);
+
+// Переключение режима "без ключевого слова": визуально гасим поле ввода,
+// чтобы было понятно, что оно сейчас не используется.
+noKeywordCheck.addEventListener('change', () => {
+  keywordInput.disabled = noKeywordCheck.checked;
+});
 
 clearParticipantsBtn.addEventListener('click', () => {
   if (isSpinning) return;
