@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Twitch Чат-рулетка (постоянный сбор)</title>
+    <title>Twitch Чат-рулетка (tmi.js)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
@@ -23,6 +23,7 @@
         .table-hover tbody tr:hover { background-color: #f1f3f5; }
         .btn-clear { background: #ffc107; border: none; }
         .btn-clear:hover { background: #e0a800; }
+        .debug-log { background: #1e1e1e; color: #d4d4d4; padding: 8px; border-radius: 8px; font-family: monospace; max-height: 100px; overflow-y: auto; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -36,11 +37,11 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label"><i class="bi bi-person-badge"></i> Канал</label>
-                            <input type="text" class="form-control" id="channelInput" value="ninja" placeholder="ник стримера">
+                            <input type="text" class="form-control" id="channelInput" value="veigardi" placeholder="ник стримера">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label"><i class="bi bi-tag"></i> Ключевое слово</label>
-                            <input type="text" class="form-control" id="keywordInput" value="!розыгрыш" placeholder="например, !розыгрыш">
+                            <input type="text" class="form-control" id="keywordInput" value="розыгрыш" placeholder="например, розыгрыш">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label"><i class="bi bi-hourglass-split"></i> Кулдаун (дней)</label>
@@ -61,6 +62,7 @@
                         <span class="badge bg-info" id="participantCounter">Участников: 0</span>
                     </div>
                     <div id="winnerDisplay" class="text-center mt-3" style="min-height: 80px;"></div>
+                    <div class="debug-log" id="debugLog">[Отладка] Готов к работе...</div>
                 </div>
             </div>
             <div class="card mt-4">
@@ -94,14 +96,22 @@
     </div>
 </div>
 
+<!-- Подключаем tmi.js -->
+<script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/tmi.min.js"></script>
+
 <script>
 // ========== Глобальные ==========
-let ws = null;
+let client = null;
 let connected = false;
-let participants = []; // массив {username}
-let isCollecting = false; // всегда true, когда бот подключен
-
+let participants = [];
+let isCollecting = false;
 const STORAGE_KEY = 'twitchRouletteWinners';
+const debugLog = document.getElementById('debugLog');
+
+function logDebug(msg) {
+    debugLog.innerHTML += `<div>${new Date().toLocaleTimeString()} — ${msg}</div>`;
+    debugLog.scrollTop = debugLog.scrollHeight;
+}
 
 // DOM
 const channelInput = document.getElementById('channelInput');
@@ -118,7 +128,7 @@ const winnerDisplay = document.getElementById('winnerDisplay');
 const winnersTableBody = document.getElementById('winnersTableBody');
 const clearWinnersBtn = document.getElementById('clearWinnersBtn');
 
-// ========== Работа с победителями (localStorage) ==========
+// ========== Работа с победителями ==========
 function getWinners() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
 }
@@ -149,7 +159,7 @@ function renderWinners() {
     winnersTableBody.innerHTML = html;
 }
 
-// ========== Обновление списка участников ==========
+// ========== Обновление UI участников ==========
 function updateParticipantsUI() {
     if (!participants.length) {
         participantsContainer.innerHTML = '<span class="text-muted">Нет участников</span>';
@@ -175,62 +185,96 @@ function updateParticipantsUI() {
     participantCounter.textContent = `Участников: ${participants.length}`;
 }
 
-// ========== Добавление участника ==========
 function addParticipant(username) {
     if (!participants.some(p => p.username.toLowerCase() === username.toLowerCase())) {
         participants.push({ username });
+        logDebug(`➕ Добавлен участник: ${username}`);
         updateParticipantsUI();
+    } else {
+        logDebug(`⚠️ Участник ${username} уже есть в списке`);
     }
 }
 
-// ========== Очистка участников ==========
 function clearParticipants() {
     if (participants.length === 0) return;
     if (confirm('Очистить список участников?')) {
         participants = [];
         updateParticipantsUI();
+        logDebug('🧹 Список участников очищен');
     }
 }
 
-// ========== Подключение к Twitch IRC ==========
+// ========== Подключение через tmi.js ==========
 function connectToTwitch() {
     const channel = channelInput.value.trim();
     if (!channel) { alert('Введите канал'); return; }
-    const nick = 'justinfan' + Math.floor(Math.random()*100000);
-    ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
-    ws.onopen = () => {
-        ws.send('CAP REQ :twitch.tv/tags twitch.tv/commands');
-        ws.send(`PASS oauth:justinfan${Math.floor(Math.random()*100000)}`);
-        ws.send(`NICK ${nick}`);
-        ws.send(`JOIN #${channel}`);
+
+    logDebug(`🔌 Подключение к каналу #${channel} через tmi.js...`);
+
+    // Создаём клиента
+    client = new tmi.Client({
+        options: { debug: true },
+        connection: { reconnect: true, secure: true },
+        identity: { username: 'justinfan' + Math.floor(Math.random()*100000), password: 'oauth:justinfan' + Math.floor(Math.random()*100000) },
+        channels: [channel]
+    });
+
+    // Обработчик подключения
+    client.on('connected', (address, port) => {
+        logDebug(`✅ Подключено к ${address}:${port}`);
         connected = true;
-        isCollecting = true; // начинаем собирать
+        isCollecting = true;
         statusBadge.className = 'status-badge badge bg-success';
         statusBadge.innerHTML = '<i class="bi bi-check-circle-fill"></i> Подключено (сбор активен)';
         connectBtn.disabled = true; disconnectBtn.disabled = false;
         pickBtn.disabled = false;
         clearParticipantsBtn.disabled = false;
         winnerDisplay.innerHTML = '<div class="text-success"><i class="bi bi-check-circle"></i> Бот слушает чат, участники добавляются автоматически</div>';
-    };
-    ws.onmessage = (e) => {
-        const msg = e.data;
-        if (msg.startsWith('PING')) { ws.send('PONG :tmi.twitch.tv'); return; }
-        const match = msg.match(/^:([^!]+)!.*PRIVMSG #([^ ]+) :(.*)$/);
-        if (match && isCollecting) {
-            const username = match[1];
-            const message = match[3].trim();
-            const keyword = keywordInput.value.trim().toLowerCase();
-            if (message.toLowerCase().includes(keyword)) {
-                addParticipant(username);
-            }
+    });
+
+    // Обработчик сообщений
+    client.on('message', (channel, tags, message, self) => {
+        if (self) return; // игнорируем свои сообщения
+
+        const username = tags['display-name'] || tags['username'] || 'unknown';
+        const keyword = keywordInput.value.trim().toLowerCase();
+
+        logDebug(`👤 ${username}: "${message}"`);
+
+        if (message.toLowerCase().includes(keyword) && isCollecting) {
+            logDebug(`🔑 СОВПАДЕНИЕ с ключевым словом "${keyword}"! Добавляем ${username}`);
+            addParticipant(username);
+        } else {
+            logDebug(`❌ Нет совпадения с "${keyword}"`);
         }
-    };
-    ws.onerror = () => { alert('Ошибка соединения'); disconnectFromTwitch(); };
-    ws.onclose = () => disconnectFromTwitch();
+    });
+
+    // Обработчик ошибок
+    client.on('error', (err) => {
+        logDebug(`❌ Ошибка tmi.js: ${err}`);
+        alert('Ошибка подключения. Проверьте консоль.');
+        disconnectFromTwitch();
+    });
+
+    // Обработчик отключения
+    client.on('disconnected', (reason) => {
+        logDebug(`🔴 Отключено: ${reason}`);
+        disconnectFromTwitch();
+    });
+
+    // Подключаемся
+    client.connect().catch(err => {
+        logDebug(`❌ Не удалось подключиться: ${err}`);
+        alert('Не удалось подключиться. Проверьте имя канала.');
+        disconnectFromTwitch();
+    });
 }
 
 function disconnectFromTwitch() {
-    if (ws) { ws.close(); ws = null; }
+    if (client) {
+        client.disconnect();
+        client = null;
+    }
     connected = false;
     isCollecting = false;
     participants = [];
@@ -242,6 +286,7 @@ function disconnectFromTwitch() {
     clearParticipantsBtn.disabled = true;
     pickBtn.textContent = '🎲 Выбрать победителя!';
     winnerDisplay.innerHTML = '';
+    logDebug('⏹ Отключено');
 }
 
 // ========== Выбор победителя ==========
@@ -265,9 +310,9 @@ function pickWinner() {
     const winner = eligible[Math.floor(Math.random() * eligible.length)].username;
     addWinner(winner, keywordInput.value.trim() || '!розыгрыш');
     winnerDisplay.innerHTML = `<div class="winner-announce"><i class="bi bi-trophy"></i> 🎉 Победитель: ${winner} 🎉</div>`;
-    // Очищаем участников после розыгрыша
     participants = [];
     updateParticipantsUI();
+    logDebug(`🏆 Победитель: ${winner}`);
 }
 
 // ========== Инициализация ==========
@@ -278,6 +323,7 @@ pickBtn.addEventListener('click', pickWinner);
 clearParticipantsBtn.addEventListener('click', clearParticipants);
 clearWinnersBtn.addEventListener('click', clearWinners);
 setInterval(renderWinners, 5000);
+logDebug('🚀 Страница загружена, ждём действий...');
 </script>
 </body>
 </html>
