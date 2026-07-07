@@ -228,6 +228,50 @@
     padding: 1rem;
     pointer-events:none;
   }
+
+  /* ============ Модальное окно с чатом победителя и секундомером ============ */
+  #winnerChatModal .modal-content{
+    background: var(--panel-bg);
+    border: 1px solid var(--border-soft);
+  }
+  #winnerChatModal .modal-header,
+  #winnerChatModal .modal-footer{
+    border-color: var(--border-soft);
+  }
+  .stopwatch-display{
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: var(--twitch-glow);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 20px rgba(145,70,255,.5);
+  }
+  .stopwatch-display.stopped{
+    color: #2ecc71;
+    text-shadow: 0 0 20px rgba(46,204,113,.5);
+  }
+  #modalChatFeed{
+    background:#0b0910;
+    border: 1px solid var(--border-soft);
+    border-radius:10px;
+    padding:.6rem;
+    font-size:.85rem;
+  }
+  #modalChatFeed .feed-line{
+    padding:.15rem 0;
+    color:#c9c2dc;
+  }
+  #modalChatFeed .feed-line .feed-name{
+    color:#8ecae6;
+    font-weight:600;
+  }
+  #modalChatFeed .feed-line.is-winner{
+    background: rgba(145,70,255,.18);
+    border-radius:6px;
+    padding:.3rem .5rem;
+  }
+  #modalChatFeed .feed-line.is-winner .feed-name{
+    color: var(--twitch-glow);
+  }
 </style>
 </head>
 
@@ -254,7 +298,7 @@
 
           <div class="mb-3">
             <label class="form-label" for="channelInput">Канал (никнейм стримера)</label>
-            <input type="text" class="form-control" id="channelInput" placeholder="например: Ton1mark">
+            <input type="text" class="form-control" id="channelInput" placeholder="например: mustashh">
           </div>
 
           <div class="mb-3">
@@ -353,6 +397,33 @@
 
 </div>
 
+<!-- ============================================================ -->
+<!-- Модальное окно: открывается после розыгрыша, показывает мини-чат
+     и секундомер — сколько секунд победитель не пишет в чат -->
+<!-- ============================================================ -->
+<div class="modal fade" id="winnerChatModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🎉 Победитель: <span id="modalWinnerName" class="text-warning"></span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-3">
+          <div class="stopwatch-display" id="modalStopwatch">0.0 сек</div>
+          <div class="small text-secondary mt-1" id="modalStatusText">Ждём сообщение победителя в чате...</div>
+        </div>
+        <div id="modalChatFeed" style="max-height:260px; overflow-y:auto;">
+          <div class="text-secondary small" id="modalFeedEmpty">Сообщения из чата появятся здесь...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- tmi.js встроен напрямую в файл (собран из npm-пакета tmi.js@1.8.5 через browserify),
      чтобы не зависеть от внешнего CDN, у которого для этой версии библиотеки нет готового браузерного файла -->
 <script>
@@ -381,6 +452,7 @@ let participants = new Map();         // username -> { displayName }
 let autoRefreshTimer = null;          // таймер автообновления истории (каждые 5 сек)
 let wheelRotation = 0;                // текущий накопленный угол поворота колеса (градусы)
 let isSpinning = false;               // флаг: рулетка сейчас крутится
+let winnerWatch = null;               // { username, displayName, startTimestamp, intervalId, answered, historyTimestamp }
 
 // ---------- Ссылки на DOM-элементы ----------
 const channelInput = document.getElementById('channelInput');
@@ -403,6 +475,13 @@ const debugLog = document.getElementById('debugLog');
 const wheelCanvas = document.getElementById('wheelCanvas');
 const wheelCtx = wheelCanvas.getContext('2d');
 const wheelEmptyHint = document.getElementById('wheelEmptyHint');
+const winnerChatModalEl = document.getElementById('winnerChatModal');
+const winnerModal = new bootstrap.Modal(winnerChatModalEl);
+const modalWinnerName = document.getElementById('modalWinnerName');
+const modalStopwatch = document.getElementById('modalStopwatch');
+const modalStatusText = document.getElementById('modalStatusText');
+const modalChatFeed = document.getElementById('modalChatFeed');
+const modalFeedEmpty = document.getElementById('modalFeedEmpty');
 
 // Палитра секторов рулетки (чередуется по кругу)
 const WHEEL_COLORS = ['#9146FF', '#5A2FA8', '#bf94ff', '#3d2a63', '#7c3aed', '#2a1f42'];
@@ -453,14 +532,30 @@ function saveHistory(history) {
 
 function addWinnerToHistory(username, displayName, keyword, channel) {
   const history = getHistory();
+  const timestamp = Date.now();
   history.unshift({
     username: username.toLowerCase(),
     displayName,
     keyword,
     channel: channel.toLowerCase(),
-    timestamp: Date.now()
+    timestamp,
+    responseTimeSeconds: null // будет заполнено, когда победитель напишет в чат
   });
   saveHistory(history);
+  return timestamp;
+}
+
+/**
+ * Обновляет запись в истории (по timestamp) временем ответа победителя в чате.
+ */
+function updateHistoryResponseTime(timestamp, seconds) {
+  const history = getHistory();
+  const entry = history.find(h => h.timestamp === timestamp);
+  if (entry) {
+    entry.responseTimeSeconds = seconds;
+    saveHistory(history);
+    renderHistory();
+  }
 }
 
 function getLastWinTimestamp(username) {
@@ -506,12 +601,16 @@ function renderHistory() {
   history.forEach(entry => {
     const item = document.createElement('div');
     item.className = 'winner-item';
+    const responseHtml = entry.responseTimeSeconds != null
+      ? `<span class="badge bg-success bg-opacity-25 text-success border border-success mt-1"><i class="bi bi-stopwatch"></i> Ответил за ${entry.responseTimeSeconds.toFixed(1)} сек</span>`
+      : `<span class="badge bg-secondary bg-opacity-25 text-secondary border border-secondary mt-1"><i class="bi bi-hourglass-split"></i> Ответ не зафиксирован</span>`;
     item.innerHTML = `
       <div class="win-name"><i class="bi bi-trophy-fill"></i> ${escapeHtml(entry.displayName)}</div>
       <div class="small text-secondary">
         Канал: ${escapeHtml(entry.channel)} · Ключевое слово: «${escapeHtml(entry.keyword)}»
       </div>
-      <div class="small text-secondary">${formatDate(entry.timestamp)}</div>
+      <div class="small text-secondary mb-1">${formatDate(entry.timestamp)}</div>
+      ${responseHtml}
     `;
     historyList.appendChild(item);
   });
@@ -657,6 +756,92 @@ function spinWheelTo(eligibleCount, winnerIndex, onFinish) {
 }
 
 // =========================================================================
+// ОКНО ПОБЕДИТЕЛЯ: секундомер и мини-чат
+// Показывает, сколько секунд победитель молчит в чате после розыгрыша,
+// и ленту сообщений, чтобы стример видел, когда именно победитель ответит.
+// =========================================================================
+
+/**
+ * Открывает модальное окно, запускает секундомер и начинает слушать чат
+ * в ожидании сообщения от указанного победителя.
+ */
+function openWinnerWatch(username, displayName, historyTimestamp) {
+  // Если предыдущее окно ещё "слушало" чат — останавливаем его таймер.
+  if (winnerWatch && winnerWatch.intervalId) {
+    clearInterval(winnerWatch.intervalId);
+  }
+
+  winnerWatch = {
+    username: username.toLowerCase(),
+    displayName,
+    startTimestamp: Date.now(),
+    intervalId: null,
+    answered: false,
+    historyTimestamp
+  };
+
+  modalWinnerName.textContent = displayName;
+  modalStatusText.textContent = 'Ждём сообщение победителя в чате...';
+  modalStatusText.className = 'small text-secondary mt-1';
+  modalStopwatch.classList.remove('stopped');
+  modalChatFeed.querySelectorAll('.feed-line').forEach(el => el.remove());
+  modalFeedEmpty.style.display = 'block';
+  updateStopwatchDisplay(0);
+
+  winnerWatch.intervalId = setInterval(() => {
+    const elapsed = (Date.now() - winnerWatch.startTimestamp) / 1000;
+    updateStopwatchDisplay(elapsed);
+  }, 100);
+
+  winnerModal.show();
+}
+
+function updateStopwatchDisplay(seconds) {
+  modalStopwatch.textContent = seconds.toFixed(1) + ' сек';
+}
+
+/**
+ * Добавляет строку в ленту чата внутри модального окна.
+ * isWinnerMsg=true подсвечивает сообщение как ответ победителя.
+ */
+function appendToModalFeed(displayName, message, isWinnerMsg) {
+  modalFeedEmpty.style.display = 'none';
+
+  const line = document.createElement('div');
+  line.className = 'feed-line' + (isWinnerMsg ? ' is-winner' : '');
+  line.innerHTML = `<span class="feed-name">${escapeHtml(displayName)}:</span> ${escapeHtml(message)}`;
+  modalChatFeed.appendChild(line);
+  modalChatFeed.scrollTop = modalChatFeed.scrollHeight;
+}
+
+/**
+ * Останавливает секундомер, когда победитель написал в чат,
+ * и сохраняет итоговое время ответа в историю.
+ */
+function stopWinnerWatch(elapsedSeconds) {
+  if (!winnerWatch || winnerWatch.answered) return;
+
+  clearInterval(winnerWatch.intervalId);
+  winnerWatch.answered = true;
+  updateStopwatchDisplay(elapsedSeconds);
+  modalStopwatch.classList.add('stopped');
+  modalStatusText.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> Победитель ответил в чате за <strong>${elapsedSeconds.toFixed(1)} сек</strong>`;
+
+  updateHistoryResponseTime(winnerWatch.historyTimestamp, elapsedSeconds);
+  log(`${winnerWatch.displayName} ответил(а) в чате через ${elapsedSeconds.toFixed(1)} сек после розыгрыша.`, 'success');
+}
+
+// Если стример закрывает окно раньше, чем победитель написал — просто
+// останавливаем таймер и перестаём слушать чат специально для этого события.
+winnerChatModalEl.addEventListener('hidden.bs.modal', () => {
+  if (winnerWatch && !winnerWatch.answered) {
+    clearInterval(winnerWatch.intervalId);
+    log(`Окно ожидания ответа от ${winnerWatch.displayName} закрыто без ответа.`, 'warn');
+  }
+  winnerWatch = null;
+});
+
+// =========================================================================
 // ПОДКЛЮЧЕНИЕ К ЧАТУ TWITCH (через tmi.js, анонимный вход justinfan)
 // =========================================================================
 
@@ -715,11 +900,24 @@ async function connectToChat() {
     if (self) return;
 
     const text = message.trim().toLowerCase();
-    log(`Сообщение от ${tags['display-name'] || tags.username}: "${message}"`, 'info');
+    const msgUsername = (tags.username || '').toLowerCase();
+    const msgDisplayName = tags['display-name'] || tags.username;
+    log(`Сообщение от ${msgDisplayName}: "${message}"`, 'info');
+
+    // Если сейчас открыто окно ожидания ответа победителя — ведём ленту чата там
+    // и проверяем, не победитель ли это написал.
+    if (winnerWatch && !winnerWatch.answered) {
+      const isWinnerMsg = msgUsername === winnerWatch.username;
+      appendToModalFeed(msgDisplayName, message, isWinnerMsg);
+      if (isWinnerMsg) {
+        const elapsed = (Date.now() - winnerWatch.startTimestamp) / 1000;
+        stopWinnerWatch(elapsed);
+      }
+    }
 
     if (text.includes(currentKeyword)) {
-      const username = (tags.username || '').toLowerCase();
-      const displayName = tags['display-name'] || tags.username;
+      const username = msgUsername;
+      const displayName = msgDisplayName;
 
       if (!username) return;
 
@@ -809,8 +1007,9 @@ function drawWinner() {
   drawWheel(); // на случай, если колесо ещё не отрисовано с актуальным составом
 
   spinWheelTo(eligible.length, winnerIndex, () => {
-    // Сохраняем победителя в историю
-    addWinnerToHistory(winnerUsername, winnerData.displayName, currentKeyword, currentChannel || 'неизвестно');
+    // Сохраняем победителя в историю (запоминаем timestamp, чтобы потом
+    // дописать в эту же запись время ответа в чате)
+    const historyTimestamp = addWinnerToHistory(winnerUsername, winnerData.displayName, currentKeyword, currentChannel || 'неизвестно');
     log(`Победитель розыгрыша: ${winnerData.displayName}`, 'success');
 
     winnerReveal.innerHTML = `🎉 Победитель: <strong>${escapeHtml(winnerData.displayName)}</strong> 🎉`;
@@ -825,6 +1024,10 @@ function drawWinner() {
     isSpinning = false;
     drawBtn.disabled = false;
     clearParticipantsBtn.disabled = false;
+
+    // Открываем окно с мини-чатом и секундомером: смотрим, через сколько
+    // секунд победитель напишет что-нибудь в чат.
+    openWinnerWatch(winnerUsername, winnerData.displayName, historyTimestamp);
   });
 }
 
