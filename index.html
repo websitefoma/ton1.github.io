@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Чат-рулетка с кулдауном</title>
+    <title>Twitch Чат-рулетка (постоянный сбор)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
@@ -21,13 +21,14 @@
         .btn-success-gradient { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border: none; color: #000; font-weight: 600; }
         .btn-success-gradient:hover { transform: scale(1.03); opacity: 0.9; }
         .table-hover tbody tr:hover { background-color: #f1f3f5; }
+        .btn-clear { background: #ffc107; border: none; }
+        .btn-clear:hover { background: #e0a800; }
     </style>
 </head>
 <body>
 <div class="container py-4">
     <h1 class="display-5 fw-bold mb-4"><i class="bi bi-dice-6-fill text-primary"></i> Чат-рулетка</h1>
     <div class="row g-4">
-        <!-- Левая панель -->
         <div class="col-lg-7">
             <div class="card">
                 <div class="card-header"><i class="bi bi-gear-fill me-2"></i> Управление</div>
@@ -45,13 +46,12 @@
                             <label class="form-label"><i class="bi bi-hourglass-split"></i> Кулдаун (дней)</label>
                             <input type="number" class="form-control" id="cooldownInput" value="7" min="0">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label"><i class="bi bi-clock-history"></i> Окно (сек)</label>
-                            <input type="number" class="form-control" id="windowInput" value="30" min="5">
-                        </div>
                         <div class="col-md-4 d-flex align-items-end">
                             <button class="btn btn-success-gradient w-100" id="connectBtn"><i class="bi bi-plug"></i> Подключиться</button>
                             <button class="btn btn-danger w-100 ms-2" id="disconnectBtn" disabled><i class="bi bi-x-circle"></i> Откл.</button>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="btn btn-clear w-100" id="clearParticipantsBtn" disabled><i class="bi bi-eraser"></i> Очистить уч.</button>
                         </div>
                     </div>
                     <hr>
@@ -63,18 +63,17 @@
                     <div id="winnerDisplay" class="text-center mt-3" style="min-height: 80px;"></div>
                 </div>
             </div>
-            <!-- Список участников с инфо о последнем выигрыше -->
             <div class="card mt-4">
-                <div class="card-header"><i class="bi bi-people-fill me-2"></i> Участники в текущем окне</div>
+                <div class="card-header"><i class="bi bi-people-fill me-2"></i> Участники (собираются автоматически)</div>
                 <div class="card-body">
                     <div id="participantsContainer"><span class="text-muted">Нет участников</span></div>
                     <div class="mt-2 small text-muted">
-                        <i class="bi bi-info-circle"></i> Зелёный значок ✔ — может участвовать, 🔒 — на кулдауне
+                        <i class="bi bi-info-circle"></i> Список пополняется, когда зрители пишут ключевое слово. 
+                        <span class="text-success">✔</span> — может участвовать, <span class="text-danger">🔒</span> — на кулдауне.
                     </div>
                 </div>
             </div>
         </div>
-        <!-- Правая панель: победители -->
         <div class="col-lg-5">
             <div class="card">
                 <div class="card-header"><i class="bi bi-trophy-fill me-2"></i> Последние победители</div>
@@ -97,18 +96,21 @@
 
 <script>
 // ========== Глобальные ==========
-let ws = null, connected = false, pickingActive = false, pickTimer = null;
-let participants = []; // массив объектов {username, lastWinDate}
+let ws = null;
+let connected = false;
+let participants = []; // массив {username}
+let isCollecting = false; // всегда true, когда бот подключен
+
 const STORAGE_KEY = 'twitchRouletteWinners';
 
 // DOM
 const channelInput = document.getElementById('channelInput');
 const keywordInput = document.getElementById('keywordInput');
 const cooldownInput = document.getElementById('cooldownInput');
-const windowInput = document.getElementById('windowInput');
 const connectBtn = document.getElementById('connectBtn');
 const disconnectBtn = document.getElementById('disconnectBtn');
 const pickBtn = document.getElementById('pickBtn');
+const clearParticipantsBtn = document.getElementById('clearParticipantsBtn');
 const statusBadge = document.getElementById('statusBadge');
 const participantCounter = document.getElementById('participantCounter');
 const participantsContainer = document.getElementById('participantsContainer');
@@ -127,7 +129,7 @@ function addWinner(username, keyword) {
     saveWinners(w);
     renderWinners();
 }
-function clearWinners() { if (confirm('Удалить всех?')) { saveWinners([]); renderWinners(); } }
+function clearWinners() { if (confirm('Удалить всех победителей?')) { saveWinners([]); renderWinners(); } }
 
 function getLastWinDate(username) {
     const wins = getWinners().filter(w => w.username.toLowerCase() === username.toLowerCase());
@@ -147,7 +149,7 @@ function renderWinners() {
     winnersTableBody.innerHTML = html;
 }
 
-// ========== Обновление списка участников (с показом последнего выигрыша) ==========
+// ========== Обновление списка участников ==========
 function updateParticipantsUI() {
     if (!participants.length) {
         participantsContainer.innerHTML = '<span class="text-muted">Нет участников</span>';
@@ -158,8 +160,7 @@ function updateParticipantsUI() {
     let html = '';
     participants.forEach(p => {
         const last = getLastWinDate(p.username);
-        let info = '';
-        let lock = '';
+        let info = '', lock = '';
         if (last) {
             const diff = (new Date() - last) / (1000*60*60*24);
             const ok = diff >= cooldownDays;
@@ -174,6 +175,23 @@ function updateParticipantsUI() {
     participantCounter.textContent = `Участников: ${participants.length}`;
 }
 
+// ========== Добавление участника ==========
+function addParticipant(username) {
+    if (!participants.some(p => p.username.toLowerCase() === username.toLowerCase())) {
+        participants.push({ username });
+        updateParticipantsUI();
+    }
+}
+
+// ========== Очистка участников ==========
+function clearParticipants() {
+    if (participants.length === 0) return;
+    if (confirm('Очистить список участников?')) {
+        participants = [];
+        updateParticipantsUI();
+    }
+}
+
 // ========== Подключение к Twitch IRC ==========
 function connectToTwitch() {
     const channel = channelInput.value.trim();
@@ -186,24 +204,24 @@ function connectToTwitch() {
         ws.send(`NICK ${nick}`);
         ws.send(`JOIN #${channel}`);
         connected = true;
+        isCollecting = true; // начинаем собирать
         statusBadge.className = 'status-badge badge bg-success';
-        statusBadge.innerHTML = '<i class="bi bi-check-circle-fill"></i> Подключено';
+        statusBadge.innerHTML = '<i class="bi bi-check-circle-fill"></i> Подключено (сбор активен)';
         connectBtn.disabled = true; disconnectBtn.disabled = false;
         pickBtn.disabled = false;
+        clearParticipantsBtn.disabled = false;
+        winnerDisplay.innerHTML = '<div class="text-success"><i class="bi bi-check-circle"></i> Бот слушает чат, участники добавляются автоматически</div>';
     };
     ws.onmessage = (e) => {
         const msg = e.data;
         if (msg.startsWith('PING')) { ws.send('PONG :tmi.twitch.tv'); return; }
         const match = msg.match(/^:([^!]+)!.*PRIVMSG #([^ ]+) :(.*)$/);
-        if (match) {
+        if (match && isCollecting) {
             const username = match[1];
             const message = match[3].trim();
             const keyword = keywordInput.value.trim().toLowerCase();
-            if (message.toLowerCase().includes(keyword) && pickingActive) {
-                if (!participants.some(p => p.username.toLowerCase() === username.toLowerCase())) {
-                    participants.push({ username });
-                    updateParticipantsUI();
-                }
+            if (message.toLowerCase().includes(keyword)) {
+                addParticipant(username);
             }
         }
     };
@@ -213,57 +231,41 @@ function connectToTwitch() {
 
 function disconnectFromTwitch() {
     if (ws) { ws.close(); ws = null; }
-    connected = false; pickingActive = false;
-    if (pickTimer) { clearTimeout(pickTimer); pickTimer = null; }
+    connected = false;
+    isCollecting = false;
     participants = [];
     updateParticipantsUI();
     statusBadge.className = 'status-badge badge bg-secondary';
     statusBadge.innerHTML = '<i class="bi bi-circle"></i> Не подключено';
     connectBtn.disabled = false; disconnectBtn.disabled = true;
     pickBtn.disabled = true;
+    clearParticipantsBtn.disabled = true;
     pickBtn.textContent = '🎲 Выбрать победителя!';
+    winnerDisplay.innerHTML = '';
 }
 
 // ========== Выбор победителя ==========
-function startPick() {
+function pickWinner() {
     if (!connected) { alert('Подключитесь к чату'); return; }
-    if (pickingActive) { alert('Уже идёт сбор'); return; }
-    const cooldownDays = parseInt(cooldownInput.value) || 0;
-    const windowSeconds = parseInt(windowInput.value) || 30;
-
-    participants = [];
-    updateParticipantsUI();
-    pickingActive = true;
-    pickBtn.disabled = true;
-    pickBtn.textContent = '⏳ Сбор...';
-    winnerDisplay.innerHTML = `<div class="text-info"><i class="bi bi-hourglass-split"></i> Сбор ${windowSeconds} сек...</div>`;
-
-    pickTimer = setTimeout(() => {
-        pickingActive = false;
-        pickBtn.disabled = false;
-        pickBtn.textContent = '🎲 Выбрать победителя!';
-        performPick(cooldownDays);
-    }, windowSeconds * 1000);
-}
-
-function performPick(cooldownDays) {
-    if (!participants.length) {
-        winnerDisplay.innerHTML = `<div class="text-danger"><i class="bi bi-exclamation-triangle"></i> Нет участников</div>`;
+    if (participants.length === 0) {
+        winnerDisplay.innerHTML = `<div class="text-warning"><i class="bi bi-exclamation-triangle"></i> Нет участников</div>`;
         return;
     }
+    const cooldownDays = parseInt(cooldownInput.value) || 0;
     const now = new Date();
     const eligible = participants.filter(p => {
         const last = getLastWinDate(p.username);
         if (!last) return true;
         return (now - last) / (1000*60*60*24) >= cooldownDays;
     });
-    if (!eligible.length) {
-        winnerDisplay.innerHTML = `<div class="text-warning"><i class="bi bi-clock"></i> Все на кулдауне (${cooldownDays} дн.)</div>`;
+    if (eligible.length === 0) {
+        winnerDisplay.innerHTML = `<div class="text-warning"><i class="bi bi-clock"></i> Все участники на кулдауне (${cooldownDays} дн.)</div>`;
         return;
     }
     const winner = eligible[Math.floor(Math.random() * eligible.length)].username;
     addWinner(winner, keywordInput.value.trim() || '!розыгрыш');
     winnerDisplay.innerHTML = `<div class="winner-announce"><i class="bi bi-trophy"></i> 🎉 Победитель: ${winner} 🎉</div>`;
+    // Очищаем участников после розыгрыша
     participants = [];
     updateParticipantsUI();
 }
@@ -272,7 +274,8 @@ function performPick(cooldownDays) {
 renderWinners();
 connectBtn.addEventListener('click', connectToTwitch);
 disconnectBtn.addEventListener('click', disconnectFromTwitch);
-pickBtn.addEventListener('click', startPick);
+pickBtn.addEventListener('click', pickWinner);
+clearParticipantsBtn.addEventListener('click', clearParticipants);
 clearWinnersBtn.addEventListener('click', clearWinners);
 setInterval(renderWinners, 5000);
 </script>
