@@ -427,7 +427,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- КОЛОНКА 3: история победителей -->
+    <!-- КОЛОНКА 3: история победителей (только для кулдауна) -->
     <!-- ============================================================ -->
     <div class="col-lg-4">
       <div class="panel">
@@ -447,7 +447,7 @@
 
   <!-- ============================================================ -->
   <!-- История выпадений — полный хронологический лог всех розыгрышей -->
-  <!-- (в отличие от карточек "История победителей", здесь нет лимита в 20 записей) -->
+  <!-- (не зависит от истории победителей, никогда не удаляется)    -->
   <!-- ============================================================ -->
   <div class="row g-4 mt-1">
     <div class="col-12">
@@ -524,25 +524,24 @@
 <script>
 /* =========================================================================
    TWITCH РАЗДАЧА — логика приложения
-   Всё состояние (участники) хранится в памяти вкладки,
-   вся история побед — в localStorage браузера.
    ========================================================================= */
 
 // ---------- Константы localStorage ----------
-const LS_HISTORY_KEY = 'twitchRaffle_history'; // ключ для истории побед
+const LS_HISTORY_KEY = 'twitchRaffle_history';   // для кулдауна
+const LS_DROPS_KEY   = 'twitchRaffle_drops';     // для полного лога
 
 // ---------- Состояние приложения ----------
-let tmiClient = null;                 // текущий клиент tmi.js
-let currentChannel = '';              // канал, к которому подключены (в нижнем регистре, без #)
-let sessionStartTimestamp = 0;        // момент подключения — от него считаем "уже выпадал за этот стрим"
-let currentKeyword = '';              // ключевое слово для участия (в нижнем регистре)
-let currentNoKeywordMode = false;     // true = в розыгрыше участвует любой, кто написал что угодно
-let participants = new Map();         // username -> { displayName }
-let messageStats = new Map();         // username -> { keywordCount, otherCount, displayName } — статистика за весь стрим
-let autoRefreshTimer = null;          // таймер автообновления истории (каждые 5 сек)
-let wheelRotation = 0;                // текущий накопленный угол поворота колеса (градусы)
-let isSpinning = false;               // флаг: рулетка сейчас крутится
-let winnerWatch = null;               // { username, displayName, startTimestamp, intervalId, answered, historyTimestamp }
+let tmiClient = null;
+let currentChannel = '';
+let sessionStartTimestamp = 0;
+let currentKeyword = '';
+let currentNoKeywordMode = false;
+let participants = new Map();
+let messageStats = new Map();
+let autoRefreshTimer = null;
+let wheelRotation = 0;
+let isSpinning = false;
+let winnerWatch = null;
 
 // ---------- Ссылки на DOM-элементы ----------
 const channelInput = document.getElementById('channelInput');
@@ -579,10 +578,9 @@ const modalRepeatWarning = document.getElementById('modalRepeatWarning');
 const modalChatFeed = document.getElementById('modalChatFeed');
 const modalFeedEmpty = document.getElementById('modalFeedEmpty');
 const rerollBtn = document.getElementById('rerollBtn');
-let rerollRequested = false; // true, если победителя вернули в список через кнопку "Реролл"
-let closeWithoutCooldown = false; // true, если окно закрыли крестиком в шапке (без начисления кулдауна)
+let rerollRequested = false;
+let closeWithoutCooldown = false;
 
-// Палитра секторов рулетки (чередуется по кругу)
 const WHEEL_COLORS = ['#9146FF', '#5A2FA8', '#bf94ff', '#3d2a63', '#7c3aed', '#2a1f42'];
 
 // =========================================================================
@@ -598,8 +596,6 @@ function log(message, level = 'info') {
   debugLog.scrollTop = debugLog.scrollHeight;
 }
 
-// Перехватываем ЛЮБЫЕ необработанные ошибки JS и выводим их в панель отладки.
-// Это нужно, чтобы пользователь видел причину сбоя, даже не открывая консоль браузера (F12).
 window.addEventListener('error', (event) => {
   log('Необработанная ошибка: ' + (event.message || event.error), 'error');
 });
@@ -608,7 +604,7 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // =========================================================================
-// РАБОТА С ИСТОРИЕЙ ПОБЕД (localStorage)
+// РАБОТА С ХРАНИЛИЩАМИ
 // =========================================================================
 
 function getHistory() {
@@ -616,7 +612,7 @@ function getHistory() {
     const raw = localStorage.getItem(LS_HISTORY_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch (e) {
-    log('Ошибка чтения истории из localStorage: ' + e.message, 'error');
+    log('Ошибка чтения истории: ' + e.message, 'error');
     return [];
   }
 }
@@ -625,47 +621,70 @@ function saveHistory(history) {
   try {
     localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(history));
   } catch (e) {
-    log('Ошибка записи истории в localStorage: ' + e.message, 'error');
+    log('Ошибка записи истории: ' + e.message, 'error');
+  }
+}
+
+function getDrops() {
+  try {
+    const raw = localStorage.getItem(LS_DROPS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    log('Ошибка чтения лога выпадений: ' + e.message, 'error');
+    return [];
+  }
+}
+
+function saveDrops(drops) {
+  try {
+    localStorage.setItem(LS_DROPS_KEY, JSON.stringify(drops));
+  } catch (e) {
+    log('Ошибка записи лога выпадений: ' + e.message, 'error');
   }
 }
 
 function addWinnerToHistory(username, displayName, keyword, channel) {
-  const history = getHistory();
   const timestamp = Date.now();
-  history.unshift({
+  const entry = {
     username: username.toLowerCase(),
     displayName,
     keyword,
     channel: channel.toLowerCase(),
     timestamp,
-    responseTimeSeconds: null // будет заполнено, когда победитель напишет в чат
-  });
+    responseTimeSeconds: null
+  };
+
+  const history = getHistory();
+  history.unshift(entry);
   saveHistory(history);
+
+  const drops = getDrops();
+  drops.unshift(entry);
+  saveDrops(drops);
+
   return timestamp;
 }
 
-/**
- * Обновляет запись в истории (по timestamp) временем ответа победителя в чате.
- */
-function updateHistoryResponseTime(timestamp, seconds) {
+function updateResponseTimeInBoth(timestamp, seconds) {
   const history = getHistory();
-  const entry = history.find(h => h.timestamp === timestamp);
-  if (entry) {
-    entry.responseTimeSeconds = seconds;
+  const histEntry = history.find(h => h.timestamp === timestamp);
+  if (histEntry) {
+    histEntry.responseTimeSeconds = seconds;
     saveHistory(history);
-    renderHistory();
+  }
+
+  const drops = getDrops();
+  const dropsEntry = drops.find(h => h.timestamp === timestamp);
+  if (dropsEntry) {
+    dropsEntry.responseTimeSeconds = seconds;
+    saveDrops(drops);
   }
 }
 
-/**
- * Удаляет запись из истории по timestamp — используется при реролле,
- * когда розыгрыш этого победителя нужно "отменить" и не выдавать кулдаун.
- */
 function removeHistoryEntry(timestamp) {
   const history = getHistory();
   const filtered = history.filter(h => h.timestamp !== timestamp);
   saveHistory(filtered);
-  renderHistory();
 }
 
 function getLastWinTimestamp(username) {
@@ -676,14 +695,10 @@ function getLastWinTimestamp(username) {
   return entry ? entry.timestamp : null;
 }
 
-/**
- * Ищет предыдущее (не текущее) выпадение этого пользователя за ТЕКУЩИЙ стрим
- * (с момента подключения). excludeTimestamp — timestamp только что созданной
- * записи о победе, её саму в расчёт не берём.
- */
+// Ищем предыдущую победу за этот стрим в ПОЛНОМ ЛОГЕ (не удаляется)
 function findPreviousWinThisStream(username, excludeTimestamp) {
-  const history = getHistory();
-  return history.find(
+  const drops = getDrops();
+  return drops.find(
     h => h.username === username.toLowerCase()
       && h.channel === currentChannel.toLowerCase()
       && h.timestamp !== excludeTimestamp
@@ -710,6 +725,10 @@ function formatDate(timestamp) {
     hour: '2-digit', minute: '2-digit'
   });
 }
+
+// =========================================================================
+// ОТРИСОВКА ИСТОРИЙ
+// =========================================================================
 
 function renderHistory() {
   const history = getHistory().slice(0, 20);
@@ -750,15 +769,11 @@ function renderHistory() {
   renderDropsHistory();
 }
 
-/**
- * Отрисовывает полный хронологический лог всех выпадений (без лимита в 20 записей,
- * в отличие от карточек "История победителей") — простыми строками, самые новые сверху.
- */
 function renderDropsHistory() {
-  const history = getHistory();
-  dropsHistoryCount.textContent = history.length;
+  const drops = getDrops();
+  dropsHistoryCount.textContent = drops.length;
 
-  if (history.length === 0) {
+  if (drops.length === 0) {
     dropsHistoryEmpty.style.display = 'block';
     dropsHistoryList.querySelectorAll('.drops-history-line').forEach(el => el.remove());
     return;
@@ -767,11 +782,11 @@ function renderDropsHistory() {
   dropsHistoryEmpty.style.display = 'none';
   dropsHistoryList.querySelectorAll('.drops-history-line').forEach(el => el.remove());
 
-  history.forEach(entry => {
+  drops.forEach(entry => {
     const line = document.createElement('div');
     line.className = 'drops-history-line';
     line.innerHTML = `
-      <span><span class="drops-name">${escapeHtml(entry.displayName)}</span> · ${escapeHtml(entry.channel)}</span>
+      <span><span class="drops-name">${escapeHtml(entry.displayName)}</span></span>
       <span class="drops-time">${formatDate(entry.timestamp)}</span>
     `;
     dropsHistoryList.appendChild(line);
@@ -824,21 +839,13 @@ function renderParticipants() {
 }
 
 // =========================================================================
-// РУЛЕТКА (Canvas): отрисовка секторов и анимация вращения
+// РУЛЕТКА
 // =========================================================================
 
-/**
- * Возвращает массив участников, допущенных к розыгрышу прямо сейчас
- * (все участники минус те, кто на кулдауне).
- */
 function getEligibleParticipants() {
   return [...participants.entries()].filter(([username]) => !isOnCooldown(username));
 }
 
-/**
- * Отрисовывает колесо рулетки с текущими допущенными участниками.
- * Каждому участнику соответствует один сектор своего цвета с именем.
- */
 function drawWheel() {
   const eligible = getEligibleParticipants();
   const size = wheelCanvas.width;
@@ -860,7 +867,6 @@ function drawWheel() {
     const startAngle = i * sliceAngle;
     const endAngle = startAngle + sliceAngle;
 
-    // Сектор
     wheelCtx.beginPath();
     wheelCtx.moveTo(cx, cy);
     wheelCtx.arc(cx, cy, radius, startAngle, endAngle);
@@ -871,7 +877,6 @@ function drawWheel() {
     wheelCtx.lineWidth = 1.5;
     wheelCtx.stroke();
 
-    // Имя участника вдоль радиуса сектора
     const midAngle = startAngle + sliceAngle / 2;
     wheelCtx.save();
     wheelCtx.translate(cx, cy);
@@ -887,30 +892,17 @@ function drawWheel() {
   });
 }
 
-/**
- * Запускает анимацию вращения колеса так, чтобы оно остановилось
- * на секторе участника с индексом winnerIndex (в массиве eligible).
- * По завершении анимации вызывает onFinish().
- */
 function spinWheelTo(eligibleCount, winnerIndex, onFinish) {
   const sliceAngle = 360 / eligibleCount;
-
-  // Центр сектора-победителя в системе координат холста (0° = 3 часа, по часовой стрелке)
-  // переводим в градусы: canvas рисует от 0 радиан, наша отрисовка тоже начинается с 0.
   const winnerCenterDeg = (winnerIndex * sliceAngle) + (sliceAngle / 2);
-
-  // Указатель находится сверху колеса, что соответствует 270° в системе координат canvas.
   const pointerDeg = 270;
 
   const currentMod = ((wheelRotation % 360) + 360) % 360;
   const requiredMod = ((pointerDeg - winnerCenterDeg) % 360 + 360) % 360;
   let deltaNeeded = (requiredMod - currentMod + 360) % 360;
 
-  // Небольшой случайный сдвиг внутри сектора, чтобы указатель не всегда
-  // останавливался ровно по центру (выглядит более естественно).
   const jitter = (Math.random() - 0.5) * (sliceAngle * 0.5);
-
-  const fullSpins = 6 + Math.floor(Math.random() * 3); // 6-8 полных оборотов для эффекта
+  const fullSpins = 6 + Math.floor(Math.random() * 3);
   wheelRotation += 360 * fullSpins + deltaNeeded + jitter;
 
   wheelCanvas.style.transform = `rotate(${wheelRotation}deg)`;
@@ -923,17 +915,10 @@ function spinWheelTo(eligibleCount, winnerIndex, onFinish) {
 }
 
 // =========================================================================
-// ОКНО ПОБЕДИТЕЛЯ: секундомер и мини-чат
-// Показывает, сколько секунд победитель молчит в чате после розыгрыша,
-// и ленту сообщений, чтобы стример видел, когда именно победитель ответит.
+// ОКНО ПОБЕДИТЕЛЯ
 // =========================================================================
 
-/**
- * Открывает модальное окно, запускает секундомер и начинает слушать чат
- * в ожидании сообщения от указанного победителя.
- */
 function openWinnerWatch(username, displayName, historyTimestamp) {
-  // Если предыдущее окно ещё "слушало" чат — останавливаем его таймер.
   if (winnerWatch && winnerWatch.intervalId) {
     clearInterval(winnerWatch.intervalId);
   }
@@ -955,7 +940,6 @@ function openWinnerWatch(username, displayName, historyTimestamp) {
   modalFeedEmpty.style.display = 'block';
   updateStopwatchDisplay(0);
 
-  // Показываем накопленную за стрим статистику сообщений этого пользователя
   const stats = messageStats.get(username.toLowerCase());
   if (stats) {
     modalMessageStats.innerHTML = `<i class="bi bi-chat-dots"></i> За стрим: ${stats.keywordCount + stats.otherCount} сообщений `
@@ -965,7 +949,7 @@ function openWinnerWatch(username, displayName, historyTimestamp) {
     modalMessageStats.textContent = 'Нет данных о сообщениях за этот стрим.';
   }
 
-  // Проверяем, не выпадал ли этот человек уже за этот же стрим
+  // Теперь ищем в логе выпадений (не удаляется)
   const previousWin = findPreviousWinThisStream(username, historyTimestamp);
   if (previousWin) {
     modalRepeatWarning.style.display = 'block';
@@ -989,10 +973,6 @@ function updateStopwatchDisplay(seconds) {
   modalStopwatch.textContent = seconds.toFixed(1) + ' сек';
 }
 
-/**
- * Добавляет строку в ленту чата внутри модального окна.
- * isWinnerMsg=true подсвечивает сообщение как ответ победителя.
- */
 function appendToModalFeed(displayName, message, isWinnerMsg) {
   modalFeedEmpty.style.display = 'none';
 
@@ -1003,10 +983,6 @@ function appendToModalFeed(displayName, message, isWinnerMsg) {
   modalChatFeed.scrollTop = modalChatFeed.scrollHeight;
 }
 
-/**
- * Останавливает секундомер, когда победитель написал в чат,
- * и сохраняет итоговое время ответа в историю.
- */
 function stopWinnerWatch(elapsedSeconds) {
   if (!winnerWatch || winnerWatch.answered) return;
 
@@ -1016,14 +992,10 @@ function stopWinnerWatch(elapsedSeconds) {
   modalStopwatch.classList.add('stopped');
   modalStatusText.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> Победитель ответил в чате за <strong>${elapsedSeconds.toFixed(1)} сек</strong>`;
 
-  updateHistoryResponseTime(winnerWatch.historyTimestamp, elapsedSeconds);
+  updateResponseTimeInBoth(winnerWatch.historyTimestamp, elapsedSeconds);
   log(`${winnerWatch.displayName} ответил(а) в чате через ${elapsedSeconds.toFixed(1)} сек после розыгрыша.`, 'success');
 }
 
-// Если стример закрывает окно раньше, чем победитель написал — есть три варианта:
-// 1) Реролл — победитель остаётся в списке, кулдаун НЕ начисляется, крутим заново.
-// 2) Крестик в шапке — просто закрываем, кулдаун НЕ начисляется, повторного розыгрыша нет.
-// 3) Кнопка "Закрыть (победителю КД)" — запись в истории остаётся, кулдаун действует как обычно.
 winnerChatModalEl.addEventListener('hidden.bs.modal', () => {
   if (winnerWatch && !winnerWatch.answered) {
     clearInterval(winnerWatch.intervalId);
@@ -1043,21 +1015,14 @@ winnerChatModalEl.addEventListener('hidden.bs.modal', () => {
 
   if (rerollRequested) {
     rerollRequested = false;
-    // Небольшая пауза, чтобы модальное окно полностью скрылось перед новым спином.
     setTimeout(() => drawWinner(), 200);
   }
 });
 
-// Крестик в шапке окна: помечаем, что закрытие должно пройти БЕЗ начисления
-// кулдауна победителю (в отличие от кнопки "Закрыть (победителю КД)" внизу).
 document.getElementById('winnerModalXBtn').addEventListener('click', () => {
   closeWithoutCooldown = true;
 });
 
-// Кнопка "Реролл": отменяем этот розыгрыш (удаляем запись из истории, чтобы
-// не начислять кулдаун победителю — сам он никуда из списка не пропадал,
-// т.к. список участников больше не очищается автоматически) и, после закрытия
-// окна, автоматически крутим рулетку заново среди того же полного списка.
 rerollBtn.addEventListener('click', () => {
   if (!winnerWatch) return;
 
@@ -1071,7 +1036,7 @@ rerollBtn.addEventListener('click', () => {
 });
 
 // =========================================================================
-// ПОДКЛЮЧЕНИЕ К ЧАТУ TWITCH (через tmi.js, анонимный вход justinfan)
+// ПОДКЛЮЧЕНИЕ К ЧАТУ
 // =========================================================================
 
 function setStatus(state, text) {
@@ -1096,9 +1061,8 @@ async function connectToChat() {
   currentChannel = channel;
   currentNoKeywordMode = noKeywordMode;
   currentKeyword = noKeywordMode ? '' : keyword;
-  sessionStartTimestamp = Date.now(); // отметка начала этого стрима — от неё считаем "уже выпадал за стрим"
+  sessionStartTimestamp = Date.now();
 
-  // Единственный автоматический сброс списка участников — при новом подключении к чату.
   participants.clear();
   messageStats.clear();
   renderParticipants();
@@ -1107,8 +1071,6 @@ async function connectToChat() {
 
   const anonNick = 'justinfan' + Math.floor(10000 + Math.random() * 90000);
 
-  // Проверка на случай, если встроенный код библиотеки почему-то не выполнился
-  // (например, файл был случайно обрезан при копировании/загрузке).
   if (typeof tmi === 'undefined') {
     setStatus('error', 'Библиотека tmi.js не загрузилась');
     log('Встроенный код tmi.js не выполнился. Проверьте, что HTML-файл скопирован полностью и не был обрезан.', 'error');
@@ -1143,8 +1105,6 @@ async function connectToChat() {
     const msgDisplayName = tags['display-name'] || tags.username;
     log(`Сообщение от ${msgDisplayName}: "${message}"`, 'info');
 
-    // Копим статистику сообщений на каждого пользователя за весь стрим:
-    // сколько сообщений содержало ключевое слово, а сколько — нет.
     if (msgUsername) {
       const stats = messageStats.get(msgUsername) || { keywordCount: 0, otherCount: 0, displayName: msgDisplayName };
       const containsKeyword = !!currentKeyword && text.includes(currentKeyword);
@@ -1153,12 +1113,10 @@ async function connectToChat() {
       } else {
         stats.otherCount++;
       }
-      stats.displayName = msgDisplayName; // обновляем на случай смены ника/капитализации
+      stats.displayName = msgDisplayName;
       messageStats.set(msgUsername, stats);
     }
 
-    // Пока открыто окно ожидания ответа победителя — показываем в нём ленту
-    // ТОЛЬКО из его собственных сообщений (все, если их несколько), остальной чат не выводим.
     if (winnerWatch) {
       const isWinnerMsg = msgUsername === winnerWatch.username;
       if (isWinnerMsg) {
@@ -1170,8 +1128,6 @@ async function connectToChat() {
       }
     }
 
-    // Участником становится либо любой написавший (режим "без ключевого слова"),
-    // либо только те, чьё сообщение содержит ключевое слово.
     const qualifies = currentNoKeywordMode || text.includes(currentKeyword);
 
     if (qualifies) {
@@ -1233,7 +1189,7 @@ async function disconnectFromChat() {
 }
 
 // =========================================================================
-// РОЗЫГРЫШ ПОБЕДИТЕЛЯ (крутим рулетку и определяем результат)
+// РОЗЫГРЫШ
 // =========================================================================
 
 function drawWinner() {
@@ -1265,21 +1221,15 @@ function drawWinner() {
   clearParticipantsBtn.disabled = true;
   log(`Кручу рулетку среди ${eligible.length} участников...`, 'info');
 
-  drawWheel(); // на случай, если колесо ещё не отрисовано с актуальным составом
+  drawWheel();
 
   spinWheelTo(eligible.length, winnerIndex, () => {
-    // Сохраняем победителя в историю (запоминаем timestamp, чтобы потом
-    // дописать в эту же запись время ответа в чате)
     const historyTimestamp = addWinnerToHistory(winnerUsername, winnerData.displayName, currentKeyword, currentChannel || 'неизвестно');
     log(`Победитель розыгрыша: ${winnerData.displayName}`, 'success');
 
     winnerReveal.innerHTML = `🎉 Победитель: <strong>${escapeHtml(winnerData.displayName)}</strong> 🎉`;
     winnerReveal.classList.add('show');
 
-    // Список участников больше НЕ очищается автоматически после розыгрыша —
-    // все, кто уже отметился в чате, остаются в списке (кроме тех, кто сейчас
-    // на кулдауне — они просто не будут допущены к следующему розыгрышу).
-    // Полный сброс списка происходит только вручную или при новом подключении к чату.
     renderParticipants();
     renderHistory();
     drawWheel();
@@ -1288,8 +1238,6 @@ function drawWinner() {
     drawBtn.disabled = false;
     clearParticipantsBtn.disabled = false;
 
-    // Открываем окно с мини-чатом и секундомером: смотрим, через сколько
-    // секунд победитель напишет что-нибудь в чат.
     openWinnerWatch(winnerUsername, winnerData.displayName, historyTimestamp);
   });
 }
@@ -1302,8 +1250,6 @@ connectBtn.addEventListener('click', connectToChat);
 disconnectBtn.addEventListener('click', disconnectFromChat);
 drawBtn.addEventListener('click', drawWinner);
 
-// Переключение режима "без ключевого слова": визуально гасим поле ввода,
-// чтобы было понятно, что оно сейчас не используется.
 noKeywordCheck.addEventListener('change', () => {
   keywordInput.disabled = noKeywordCheck.checked;
 });
@@ -1317,12 +1263,10 @@ clearParticipantsBtn.addEventListener('click', () => {
   log('Список участников очищен вручную.', 'info');
 });
 
-// Удаление одного конкретного участника кликом по крестику на его карточке
-// (делегирование события, т.к. карточки перерисовываются динамически).
 participantsList.addEventListener('click', (event) => {
   const btn = event.target.closest('.btn-remove-participant');
   if (!btn) return;
-  if (isSpinning) return; // нельзя менять состав прямо во время розыгрыша
+  if (isSpinning) return;
 
   const username = btn.dataset.username;
   const data = participants.get(username);
@@ -1335,14 +1279,12 @@ participantsList.addEventListener('click', (event) => {
 });
 
 clearHistoryBtn.addEventListener('click', () => {
-  if (!confirm('Удалить всю историю победителей без возможности восстановления?')) return;
+  if (!confirm('Удалить всю историю победителей? (лог выпадений останется нетронутым)')) return;
   saveHistory([]);
   renderHistory();
   log('История победителей полностью очищена.', 'warn');
 });
 
-// Удаление одной конкретной записи истории кликом по крестику на её карточке
-// (делегирование события, т.к. карточки перерисовываются динамически).
 historyList.addEventListener('click', (event) => {
   const btn = event.target.closest('.btn-remove-participant');
   if (!btn) return;
@@ -1351,23 +1293,24 @@ historyList.addEventListener('click', (event) => {
   if (!timestamp) return;
 
   removeHistoryEntry(timestamp);
-  log('Запись удалена из истории победителей.', 'info');
+  renderHistory();
+  log('Запись удалена из истории победителей (кулдаун снят).', 'info');
 });
 
 // =========================================================================
-// АВТООБНОВЛЕНИЕ ИСТОРИИ И СПИСКА УЧАСТНИКОВ (каждые 5 секунд)
+// АВТООБНОВЛЕНИЕ
 // =========================================================================
 
 function startAutoRefresh() {
   autoRefreshTimer = setInterval(() => {
     renderHistory();
-    renderParticipants(); // чтобы значки 🔒 обновлялись по мере истечения кулдауна
+    renderParticipants();
     if (!isSpinning) drawWheel();
   }, 5000);
 }
 
 // =========================================================================
-// ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+// ИНИЦИАЛИЗАЦИЯ
 // =========================================================================
 
 window.addEventListener('DOMContentLoaded', () => {
