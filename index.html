@@ -360,6 +360,174 @@
     padding: 2rem 1rem;
   }
 
+  /* ============ РЕЖИМ "COUNTER-STRIKE" ============ */
+  .cs-wrap {
+    margin-bottom: 1rem;
+  }
+  .cs-content {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    justify-content: center;
+    background: rgba(0,0,0,0.4);
+    border-radius: 14px;
+    padding: 10px;
+  }
+  .team-column {
+    flex: 1;
+    min-width: 100px;
+    background: rgba(20,15,30,0.7);
+    border-radius: 10px;
+    padding: 6px 4px;
+    border: 1px solid var(--border-soft);
+  }
+  .team-header {
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border-soft);
+    margin-bottom: 6px;
+  }
+  .team-terrorist .team-header { color: #ff6b6b; }
+  .team-counter .team-header { color: #4ecdc4; }
+
+  .player-with-marker {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .player-marker {
+    width: 20px;
+    height: 20px;
+    background: #2a1f42;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #b8a0ff;
+    border: 1px solid var(--twitch-purple);
+    flex-shrink: 0;
+  }
+  .team-player {
+    flex: 1;
+    background: var(--panel-bg-2);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 28px;
+    border: 1px solid transparent;
+    transition: border-color .2s;
+  }
+  .team-player:not(:empty) {
+    border-color: var(--border-soft);
+  }
+
+  .cs-video-container {
+    flex: 2;
+    min-width: 200px;
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #0b0910;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cs-video {
+    width: 100%;
+    height: auto;
+    max-height: 220px;
+    display: block;
+    background: #000;
+  }
+
+  .cs-winner-display-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(3px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 10px;
+    animation: pop .4s ease;
+  }
+  .cs-winner-avatar-overlay {
+    font-size: 3rem;
+    color: gold;
+    text-shadow: 0 0 30px rgba(255,215,0,0.7);
+  }
+  .winner-info-overlay {
+    text-align: center;
+    color: #fff;
+  }
+  .winner-name-overlay {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--twitch-glow);
+  }
+  .winner-text-overlay {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+
+  /* Конфетти (анимация) */
+  .winner-celebration {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .confetti {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    animation: confettiFall 2s linear infinite;
+  }
+  .confetti:nth-child(1) { left: 10%; top: -10%; background: #ff6b6b; animation-delay: 0s; }
+  .confetti:nth-child(2) { left: 50%; top: -10%; background: #feca57; animation-delay: 0.4s; }
+  .confetti:nth-child(3) { left: 80%; top: -10%; background: #48dbfb; animation-delay: 0.8s; }
+
+  @keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(280px) rotate(720deg); opacity: 0; }
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Адаптив для маленьких экранов */
+  @media (max-width: 576px) {
+    .cs-content {
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .team-column {
+      flex: 1 1 40%;
+      min-width: 80px;
+    }
+    .cs-video-container {
+      flex: 1 1 100%;
+      order: -1;
+    }
+    .cs-video {
+      max-height: 140px;
+    }
+  }
+
   /* ============ Бегущая строка выводов (vivod.txt) ============ */
   .drops-ticker-wrap{
     position: fixed;
@@ -571,6 +739,10 @@
 
             <input type="radio" class="btn-check" name="drawMode" id="modeElimination" autocomplete="off">
             <label class="btn btn-outline-light btn-sm" for="modeElimination"><i class="bi bi-skull"></i> Выбывание</label>
+
+            <!-- НОВЫЙ режим Counter-Strike -->
+            <input type="radio" class="btn-check" name="drawMode" id="modeCs" autocomplete="off">
+            <label class="btn btn-outline-light btn-sm" for="modeCs"><i class="bi bi-crosshair"></i> Counter-Strike</label>
           </div>
 
           <!-- Колесо рулетки -->
@@ -585,6 +757,49 @@
           <div class="elimination-wrap" id="eliminationWrap" style="display:none;">
             <div class="elimination-grid" id="eliminationGrid">
               <div class="elimination-empty-hint" id="eliminationEmptyHint">Ждём участников в чате...</div>
+            </div>
+          </div>
+
+          <!-- НОВЫЙ блок "Counter-Strike" -->
+          <div class="cs-wrap" id="csWrap" style="display:none;">
+            <div class="cs-content">
+              <!-- Команда TERRORISTS -->
+              <div class="team-column team-terrorist">
+                <div class="team-header">TERRORISTS</div>
+                <div class="player-with-marker"><div class="player-marker">6</div><div class="team-player" id="terroristPlayer1"></div></div>
+                <div class="player-with-marker"><div class="player-marker">7</div><div class="team-player" id="terroristPlayer2"></div></div>
+                <div class="player-with-marker"><div class="player-marker">8</div><div class="team-player" id="terroristPlayer3"></div></div>
+                <div class="player-with-marker"><div class="player-marker">9</div><div class="team-player" id="terroristPlayer4"></div></div>
+                <div class="player-with-marker"><div class="player-marker">0</div><div class="team-player" id="terroristPlayer5"></div></div>
+              </div>
+
+              <!-- Видео + оверлей победителя -->
+              <div class="cs-video-container">
+                <video class="cs-video" id="csVideo" preload="none" crossorigin="anonymous">
+                  <source src="cs1.webm" type="video/webm">
+                  Ваш браузер не поддерживает video.
+                </video>
+                <div class="cs-winner-display-overlay" id="csWinnerDisplay" style="display:none;">
+                  <div class="winner-celebration">
+                    <div class="confetti"></div><div class="confetti"></div><div class="confetti"></div>
+                  </div>
+                  <div class="cs-winner-avatar-overlay"><i class="bi bi-crown-fill"></i></div>
+                  <div class="winner-info-overlay">
+                    <div class="winner-name-overlay" id="csWinnerName">Победитель</div>
+                    <div class="winner-text-overlay">Поздравляем с победой в розыгрыше!</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Команда COUNTER-TERRORISTS -->
+              <div class="team-column team-counter">
+                <div class="team-header">COUNTER-TERRORISTS</div>
+                <div class="player-with-marker"><div class="player-marker">1</div><div class="team-player" id="counterPlayer1"></div></div>
+                <div class="player-with-marker"><div class="player-marker">2</div><div class="team-player" id="counterPlayer2"></div></div>
+                <div class="player-with-marker"><div class="player-marker">3</div><div class="team-player" id="counterPlayer3"></div></div>
+                <div class="player-with-marker"><div class="player-marker">4</div><div class="team-player" id="counterPlayer4"></div></div>
+                <div class="player-with-marker"><div class="player-marker">5</div><div class="team-player" id="counterPlayer5"></div></div>
+              </div>
             </div>
           </div>
 
@@ -687,19 +902,22 @@
   </div>
 </div>
 
-<!-- tmi.js встроен напрямую в файл (собран из npm-пакета tmi.js@1.8.5 через browserify),
-     чтобы не зависеть от внешнего CDN, у которого для этой версии библиотеки нет готового браузерного файла -->
+<!-- ============================================================ -->
+<!-- ВСТРОЕННЫЙ TMI.JS (взят из вашего исходного файла) -->
+<!-- ============================================================ -->
 <script>
-
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{("undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:this).tmiGlobal=e()}}(function(){return function e(t,n,s){function o(r,a){if(!n[r]){if(!t[r]){var c="function"==typeof require&&require;if(!a&&c)return c(r,!0);if(i)return i(r,!0);var u=new Error("Cannot find module '"+r+"'");throw u.code="MODULE_NOT_FOUND",u}var l=n[r]={exports:{}};t[r][0].call(l.exports,function(e){return o(t[r][1][e]||e)},l,l.exports,e,t,n,s)}return n[r].exports}for(var i="function"==typeof require&&require,r=0;r<s.length;r++)o(s[r]);return o}({1:[function(e,t,n){window.tmi=e("tmi.js")},{"tmi.js":4}],2:[function(e,t,n){},{}],3:[function(e,t,n){var s,o,i=t.exports={};function r(){throw new Error("setTimeout has not been defined")}function a(){throw new Error("clearTimeout has not been defined")}function c(e){if(s===setTimeout)return setTimeout(e,0);if((s===r||!s)&&setTimeout)return s=setTimeout,setTimeout(e,0);try{return s(e,0)}catch(t){try{return s.call(null,e,0)}catch(t){return s.call(this,e,0)}}}!function(){try{s="function"==typeof setTimeout?setTimeout:r}catch(e){s=r}try{o="function"==typeof clearTimeout?clearTimeout:a}catch(e){o=a}}();var u,l=[],m=!1,h=-1;function f(){m&&u&&(m=!1,u.length?l=u.concat(l):h=-1,l.length&&p())}function p(){if(!m){var e=c(f);m=!0;for(var t=l.length;t;){for(u=l,l=[];++h<t;)u&&u[h].run();h=-1,t=l.length}u=null,m=!1,function(e){if(o===clearTimeout)return clearTimeout(e);if((o===a||!o)&&clearTimeout)return o=clearTimeout,clearTimeout(e);try{return o(e)}catch(t){try{return o.call(null,e)}catch(t){return o.call(this,e)}}}(e)}}function d(e,t){this.fun=e,this.array=t}function g(){}i.nextTick=function(e){var t=new Array(arguments.length-1);if(arguments.length>1)for(var n=1;n<arguments.length;n++)t[n-1]=arguments[n];l.push(new d(e,t)),1!==l.length||m||c(p)},d.prototype.run=function(){this.fun.apply(null,this.array)},i.title="browser",i.browser=!0,i.env={},i.argv=[],i.version="",i.versions={},i.on=g,i.addListener=g,i.once=g,i.off=g,i.removeListener=g,i.removeAllListeners=g,i.emit=g,i.prependListener=g,i.prependOnceListener=g,i.listeners=function(e){return[]},i.binding=function(e){throw new Error("process.binding is not supported")},i.cwd=function(){return"/"},i.chdir=function(e){throw new Error("process.chdir is not supported")},i.umask=function(){return 0}},{}],4:[function(e,t,n){var s=e("./lib/client");t.exports={client:s,Client:s}},{"./lib/client":6}],5:[function(e,t,n){function s(e){return s="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},s(e)}function o(e,t){var n=Object.keys(e);if(Object.getOwnPropertySymbols){var s=Object.getOwnPropertySymbols(e);t&&(s=s.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),n.push.apply(n,s)}return n}function i(e){for(var t=1;t<arguments.length;t++){var n=null!=arguments[t]?arguments[t]:{};t%2?o(Object(n),!0).forEach(function(t){r(e,t,n[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(n)):o(Object(n)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(n,t))})}return e}function r(e,t,n){return(t=function(e){var t=function(e,t){if("object"!=s(e)||!e)return e;var n=e[Symbol.toPrimitive];if(void 0!==n){var o=n.call(e,t||"default");if("object"!=s(o))return o;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==s(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:n,enumerable:!0,configurable:!0,writable:!0}):e[t]=n,e}var a=e("node-fetch"),c=e("./utils");t.exports=function(e,t){var n=void 0!==e.url?e.url:e.uri;if(c.isURL(n)||(n="https://api.twitch.tv/kraken".concat("/"===n[0]?n:"/".concat(n))),c.isNode()){var s=Object.assign({method:"GET",json:!0},e);if(s.qs){var o=new URLSearchParams(s.qs);n+="?".concat(o)}var r={};"fetchAgent"in this.opts.connection&&(r.agent=this.opts.connection.fetchAgent);var u=a(n,i(i({},r),{},{method:s.method,headers:s.headers,body:s.body})),l={};u.then(function(e){return l={statusCode:e.status,headers:e.headers},s.json?e.json():e.text()}).then(function(e){return t(null,l,e)},function(e){return t(e,l,null)})}else{var m=Object.assign({method:"GET",headers:{}},e,{url:n}),h=new XMLHttpRequest;for(var f in h.open(m.method,m.url,!0),m.headers)h.setRequestHeader(f,m.headers[f]);h.responseType="json",h.addEventListener("load",function(e){4===h.readyState&&(200!==h.status?t(h.status,null,null):t(null,null,h.response))}),h.send()}}},{"./utils":12,"node-fetch":2}],6:[function(e,t,n){(function(n){(function(){function s(e){return s="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},s(e)}function o(e,t){var n=Object.keys(e);if(Object.getOwnPropertySymbols){var s=Object.getOwnPropertySymbols(e);t&&(s=s.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),n.push.apply(n,s)}return n}function i(e){for(var t=1;t<arguments.length;t++){var n=null!=arguments[t]?arguments[t]:{};t%2?o(Object(n),!0).forEach(function(t){r(e,t,n[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(n)):o(Object(n)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(n,t))})}return e}function r(e,t,n){return(t=function(e){var t=function(e,t){if("object"!=s(e)||!e)return e;var n=e[Symbol.toPrimitive];if(void 0!==n){var o=n.call(e,t||"default");if("object"!=s(o))return o;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==s(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:n,enumerable:!0,configurable:!0,writable:!0}):e[t]=n,e}function a(e){return function(e){if(Array.isArray(e))return c(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return c(e,t);var n={}.toString.call(e).slice(8,-1);return"Object"===n&&e.constructor&&(n=e.constructor.name),"Map"===n||"Set"===n?Array.from(e):"Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)?c(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function c(e,t){(null==t||t>e.length)&&(t=e.length);for(var n=0,s=Array(t);n<t;n++)s[n]=e[n];return s}var u=void 0!==n?n:"undefined"!=typeof window?window:{},l=u.WebSocket||e("ws"),m=u.fetch||e("node-fetch"),h=e("./api"),f=e("./commands"),p=e("./events").EventEmitter,d=e("./logger"),g=e("./parser"),_=e("./timer"),b=e("./utils"),v=!1,y=function e(t){if(this instanceof e==!1)return new e(t);this.opts=b.get(t,{}),this.opts.channels=this.opts.channels||[],this.opts.connection=this.opts.connection||{},this.opts.identity=this.opts.identity||{},this.opts.options=this.opts.options||{},this.clientId=b.get(this.opts.options.clientId,null),this._globalDefaultChannel=b.channel(b.get(this.opts.options.globalDefaultChannel,"#tmijs")),this._skipMembership=b.get(this.opts.options.skipMembership,!1),this._skipUpdatingEmotesets=b.get(this.opts.options.skipUpdatingEmotesets,!1),this._updateEmotesetsTimer=null,this._updateEmotesetsTimerDelay=b.get(this.opts.options.updateEmotesetsTimer,6e4),this.maxReconnectAttempts=b.get(this.opts.connection.maxReconnectAttempts,1/0),this.maxReconnectInterval=b.get(this.opts.connection.maxReconnectInterval,3e4),this.reconnect=b.get(this.opts.connection.reconnect,!0),this.reconnectDecay=b.get(this.opts.connection.reconnectDecay,1.5),this.reconnectInterval=b.get(this.opts.connection.reconnectInterval,1e3),this.reconnecting=!1,this.reconnections=0,this.reconnectTimer=this.reconnectInterval,this.secure=b.get(this.opts.connection.secure,!this.opts.connection.server&&!this.opts.connection.port),this.emotes="",this.emotesets={},this.channels=[],this.currentLatency=0,this.globaluserstate={},this.lastJoined="",this.latency=new Date,this.moderators={},this.pingLoop=null,this.pingTimeout=null,this.reason="",this.username="",this.userstate={},this.wasCloseCalled=!1,this.ws=null;var n="error";this.opts.options.debug&&(n="info"),this.log=this.opts.logger||d;try{d.setLevel(n)}catch(e){}this.opts.channels.forEach(function(e,t,n){return n[t]=b.channel(e)}),p.call(this),this.setMaxListeners(0)};for(var w in b.inherits(y,p),f)y.prototype[w]=f[w];y.prototype.emits=function(e,t){for(var n=0;n<e.length;n++){var s=n<t.length?t[n]:t[t.length-1];this.emit.apply(this,[e[n]].concat(s))}},y.prototype.api=function(){v||(this.log.warn("Client.prototype.api is deprecated and will be removed for version 2.0.0"),v=!0),h.apply(void 0,arguments)},y.prototype.handleMessage=function(e){var t=this;if(e){this.listenerCount("raw_message")&&this.emit("raw_message",JSON.parse(JSON.stringify(e)),e);var n=b.channel(b.get(e.params[0],null)),s=b.get(e.params[1],null),o=b.get(e.tags["msg-id"],null),i=e.tags=g.badges(g.badgeInfo(g.emotes(e.tags)));for(var r in i)if("emote-sets"!==r&&"ban-duration"!==r&&"bits"!==r){var c=i[r];"boolean"==typeof c?c=null:"1"===c?c=!0:"0"===c?c=!1:"string"==typeof c&&(c=b.unescapeIRC(c)),i[r]=c}if(null===e.prefix)switch(e.command){case"PING":this.emit("ping"),this._isConnected()&&this.ws.send("PONG");break;case"PONG":var u=new Date;this.currentLatency=(u.getTime()-this.latency.getTime())/1e3,this.emits(["pong","_promisePing"],[[this.currentLatency]]),clearTimeout(this.pingTimeout);break;default:this.log.warn("Could not parse message with no prefix:\n".concat(JSON.stringify(e,null,4)))}else if("tmi.twitch.tv"===e.prefix)switch(e.command){case"002":case"003":case"004":case"372":case"375":case"CAP":case"SERVERCHANGE":break;case"001":this.username=e.params[0];break;case"376":this.log.info("Connected to server."),this.userstate[this._globalDefaultChannel]={},this.emits(["connected","_promiseConnect"],[[this.server,this.port],[null]]),this.reconnections=0,this.reconnectTimer=this.reconnectInterval,this.pingLoop=setInterval(function(){t._isConnected()&&t.ws.send("PING"),t.latency=new Date,t.pingTimeout=setTimeout(function(){null!==t.ws&&(t.wasCloseCalled=!1,t.log.error("Ping timeout."),t.ws.close(),clearInterval(t.pingLoop),clearTimeout(t.pingTimeout),clearTimeout(t._updateEmotesetsTimer))},b.get(t.opts.connection.timeout,9999))},6e4);var l=b.get(this.opts.options.joinInterval,2e3);l<300&&(l=300);var m=new _(l),h=a(new Set([].concat(a(this.opts.channels),a(this.channels))));this.channels=[];for(var f=function(){var e=h[p];m.add(function(){t._isConnected()&&t.join(e).catch(function(e){return t.log.error(e)})})},p=0;p<h.length;p++)f();m.next();break;case"NOTICE":var d=[null],v=[n,o,s],y=[n,!0],w=[n,!1],C=[v,d],k=[v,[o]],T="[".concat(n,"] ").concat(s);switch(o){case"subs_on":this.log.info("[".concat(n,"] This room is now in subscribers-only mode.")),this.emits(["subscriber","subscribers","_promiseSubscribers"],[y,y,d]);break;case"subs_off":this.log.info("[".concat(n,"] This room is no longer in subscribers-only mode.")),this.emits(["subscriber","subscribers","_promiseSubscribersoff"],[w,w,d]);break;case"emote_only_on":this.log.info("[".concat(n,"] This room is now in emote-only mode.")),this.emits(["emoteonly","_promiseEmoteonly"],[y,d]);break;case"emote_only_off":this.log.info("[".concat(n,"] This room is no longer in emote-only mode.")),this.emits(["emoteonly","_promiseEmoteonlyoff"],[w,d]);break;case"slow_on":case"slow_off":case"followers_on_zero":case"followers_on":case"followers_off":case"host_on":case"host_off":break;case"r9k_on":this.log.info("[".concat(n,"] This room is now in r9k mode.")),this.emits(["r9kmode","r9kbeta","_promiseR9kbeta"],[y,y,d]);break;case"r9k_off":this.log.info("[".concat(n,"] This room is no longer in r9k mode.")),this.emits(["r9kmode","r9kbeta","_promiseR9kbetaoff"],[w,w,d]);break;case"room_mods":var O=s.split(": "),S=(O.length>1?O[1]:"").toLowerCase().split(", ").filter(function(e){return e});this.emits(["_promiseMods","mods"],[[null,S],[n,S]]);break;case"no_mods":this.emits(["_promiseMods","mods"],[[null,[]],[n,[]]]);break;case"vips_success":s.endsWith(".")&&(s=s.slice(0,-1));var E=s.split(": "),x=(E.length>1?E[1]:"").toLowerCase().split(", ").filter(function(e){return e});this.emits(["_promiseVips","vips"],[[null,x],[n,x]]);break;case"no_vips":this.emits(["_promiseVips","vips"],[[null,[]],[n,[]]]);break;case"already_banned":case"bad_ban_admin":case"bad_ban_anon":case"bad_ban_broadcaster":case"bad_ban_global_mod":case"bad_ban_mod":case"bad_ban_self":case"bad_ban_staff":case"usage_ban":this.log.info(T),this.emits(["notice","_promiseBan"],k);break;case"ban_success":this.log.info(T),this.emits(["notice","_promiseBan"],C);break;case"usage_clear":this.log.info(T),this.emits(["notice","_promiseClear"],k);break;case"usage_mods":this.log.info(T),this.emits(["notice","_promiseMods"],[v,[o,[]]]);break;case"mod_success":this.log.info(T),this.emits(["notice","_promiseMod"],C);break;case"usage_vips":this.log.info(T),this.emits(["notice","_promiseVips"],[v,[o,[]]]);break;case"usage_vip":case"bad_vip_grantee_banned":case"bad_vip_grantee_already_vip":case"bad_vip_max_vips_reached":case"bad_vip_achievement_incomplete":this.log.info(T),this.emits(["notice","_promiseVip"],[v,[o,[]]]);break;case"vip_success":this.log.info(T),this.emits(["notice","_promiseVip"],C);break;case"usage_mod":case"bad_mod_banned":case"bad_mod_mod":this.log.info(T),this.emits(["notice","_promiseMod"],k);break;case"unmod_success":this.log.info(T),this.emits(["notice","_promiseUnmod"],C);break;case"unvip_success":this.log.info(T),this.emits(["notice","_promiseUnvip"],C);break;case"usage_unmod":case"bad_unmod_mod":this.log.info(T),this.emits(["notice","_promiseUnmod"],k);break;case"usage_unvip":case"bad_unvip_grantee_not_vip":this.log.info(T),this.emits(["notice","_promiseUnvip"],k);break;case"color_changed":this.log.info(T),this.emits(["notice","_promiseColor"],C);break;case"usage_color":case"turbo_only_color":this.log.info(T),this.emits(["notice","_promiseColor"],k);break;case"commercial_success":this.log.info(T),this.emits(["notice","_promiseCommercial"],C);break;case"usage_commercial":case"bad_commercial_error":this.log.info(T),this.emits(["notice","_promiseCommercial"],k);break;case"hosts_remaining":this.log.info(T);var L=isNaN(s[0])?0:parseInt(s[0]);this.emits(["notice","_promiseHost"],[v,[null,~~L]]);break;case"bad_host_hosting":case"bad_host_rate_exceeded":case"bad_host_error":case"usage_host":this.log.info(T),this.emits(["notice","_promiseHost"],[v,[o,null]]);break;case"already_r9k_on":case"usage_r9k_on":this.log.info(T),this.emits(["notice","_promiseR9kbeta"],k);break;case"already_r9k_off":case"usage_r9k_off":this.log.info(T),this.emits(["notice","_promiseR9kbetaoff"],k);break;case"timeout_success":this.log.info(T),this.emits(["notice","_promiseTimeout"],C);break;case"delete_message_success":this.log.info("[".concat(n," ").concat(s,"]")),this.emits(["notice","_promiseDeletemessage"],C);break;case"already_subs_off":case"usage_subs_off":this.log.info(T),this.emits(["notice","_promiseSubscribersoff"],k);break;case"already_subs_on":case"usage_subs_on":this.log.info(T),this.emits(["notice","_promiseSubscribers"],k);break;case"already_emote_only_off":case"usage_emote_only_off":this.log.info(T),this.emits(["notice","_promiseEmoteonlyoff"],k);break;case"already_emote_only_on":case"usage_emote_only_on":this.log.info(T),this.emits(["notice","_promiseEmoteonly"],k);break;case"usage_slow_on":this.log.info(T),this.emits(["notice","_promiseSlow"],k);break;case"usage_slow_off":this.log.info(T),this.emits(["notice","_promiseSlowoff"],k);break;case"usage_timeout":case"bad_timeout_admin":case"bad_timeout_anon":case"bad_timeout_broadcaster":case"bad_timeout_duration":case"bad_timeout_global_mod":case"bad_timeout_mod":case"bad_timeout_self":case"bad_timeout_staff":this.log.info(T),this.emits(["notice","_promiseTimeout"],k);break;case"untimeout_success":case"unban_success":this.log.info(T),this.emits(["notice","_promiseUnban"],C);break;case"usage_unban":case"bad_unban_no_ban":this.log.info(T),this.emits(["notice","_promiseUnban"],k);break;case"usage_delete":case"bad_delete_message_error":case"bad_delete_message_broadcaster":case"bad_delete_message_mod":this.log.info(T),this.emits(["notice","_promiseDeletemessage"],k);break;case"usage_unhost":case"not_hosting":this.log.info(T),this.emits(["notice","_promiseUnhost"],k);break;case"whisper_invalid_login":case"whisper_invalid_self":case"whisper_limit_per_min":case"whisper_limit_per_sec":case"whisper_restricted":case"whisper_restricted_recipient":this.log.info(T),this.emits(["notice","_promiseWhisper"],k);break;case"no_permission":case"msg_banned":case"msg_room_not_found":case"msg_channel_suspended":case"tos_ban":case"invalid_user":this.log.info(T),this.emits(["notice","_promiseBan","_promiseClear","_promiseUnban","_promiseTimeout","_promiseDeletemessage","_promiseMods","_promiseMod","_promiseUnmod","_promiseVips","_promiseVip","_promiseUnvip","_promiseCommercial","_promiseHost","_promiseUnhost","_promiseJoin","_promisePart","_promiseR9kbeta","_promiseR9kbetaoff","_promiseSlow","_promiseSlowoff","_promiseFollowers","_promiseFollowersoff","_promiseSubscribers","_promiseSubscribersoff","_promiseEmoteonly","_promiseEmoteonlyoff","_promiseWhisper"],[v,[o,n]]);break;case"msg_rejected":case"msg_rejected_mandatory":this.log.info(T),this.emit("automod",n,o,s);break;case"unrecognized_cmd":case"cmds_available":case"host_target_went_offline":case"msg_censored_broadcaster":case"msg_duplicate":case"msg_emoteonly":case"msg_verified_email":case"msg_ratelimit":case"msg_subsonly":case"msg_timedout":case"msg_bad_characters":case"msg_channel_blocked":case"msg_facebook":case"msg_followersonly":case"msg_followersonly_followed":case"msg_followersonly_zero":case"msg_slowmode":case"msg_suspended":case"no_help":case"usage_disconnect":case"usage_help":case"usage_me":case"unavailable_command":this.log.info(T),this.emit("notice",n,o,s);break;default:s.includes("Login unsuccessful")||s.includes("Login authentication failed")||s.includes("Error logging in")||s.includes("Improperly formatted auth")?(this.wasCloseCalled=!1,this.reconnect=!1,this.reason=s,this.log.error(this.reason),this.ws.close()):s.includes("Invalid NICK")?(this.wasCloseCalled=!1,this.reconnect=!1,this.reason="Invalid NICK.",this.log.error(this.reason),this.ws.close()):(this.log.warn("Could not parse NOTICE from tmi.twitch.tv:\n".concat(JSON.stringify(e,null,4))),this.emit("notice",n,o,s))}break;case"USERNOTICE":var j=i["display-name"]||i.login,P=i["msg-param-sub-plan"]||"",I=b.unescapeIRC(b.get(i["msg-param-sub-plan-name"],""))||null,N={prime:P.includes("Prime"),plan:P,planName:I},R=~~(i["msg-param-streak-months"]||0),A=i["msg-param-recipient-display-name"]||i["msg-param-recipient-user-name"],M=~~i["msg-param-mass-gift-count"];switch(i["message-type"]=o,o){case"resub":this.emits(["resub","subanniversary"],[[n,j,R,s,i,N]]);break;case"sub":this.emits(["subscription","sub"],[[n,j,N,s,i]]);break;case"subgift":this.emit("subgift",n,j,R,A,N,i);break;case"anonsubgift":this.emit("anonsubgift",n,R,A,N,i);break;case"submysterygift":this.emit("submysterygift",n,j,M,N,i);break;case"anonsubmysterygift":this.emit("anonsubmysterygift",n,M,N,i);break;case"primepaidupgrade":this.emit("primepaidupgrade",n,j,N,i);break;case"giftpaidupgrade":var D=i["msg-param-sender-name"]||i["msg-param-sender-login"];this.emit("giftpaidupgrade",n,j,D,i);break;case"anongiftpaidupgrade":this.emit("anongiftpaidupgrade",n,j,i);break;case"raid":var U=i["msg-param-displayName"]||i["msg-param-login"],J=+i["msg-param-viewerCount"];this.emit("raided",n,U,J,i);break;case"ritual":var G=i["msg-param-ritual-name"];if("new_chatter"===G)this.emit("newchatter",n,j,i,s);else this.emit("ritual",G,n,j,i,s);break;default:this.emit("usernotice",o,n,i,s)}break;case"HOSTTARGET":var H=s.split(" "),q=~~H[1]||0;"-"===H[0]?(this.log.info("[".concat(n,"] Exited host mode.")),this.emits(["unhost","_promiseUnhost"],[[n,q],[null]])):(this.log.info("[".concat(n,"] Now hosting ").concat(H[0]," for ").concat(q," viewer(s).")),this.emit("hosting",n,H[0],q));break;case"CLEARCHAT":if(e.params.length>1){var W=b.get(e.tags["ban-duration"],null);null===W?(this.log.info("[".concat(n,"] ").concat(s," has been banned.")),this.emit("ban",n,s,null,e.tags)):(this.log.info("[".concat(n,"] ").concat(s," has been timed out for ").concat(W," seconds.")),this.emit("timeout",n,s,null,~~W,e.tags))}else this.log.info("[".concat(n,"] Chat was cleared by a moderator.")),this.emits(["clearchat","_promiseClear"],[[n],[null]]);break;case"CLEARMSG":if(e.params.length>1){var V=s,F=i.login;i["message-type"]="messagedeleted",this.log.info("[".concat(n,"] ").concat(F,"'s message has been deleted.")),this.emit("messagedeleted",n,F,V,i)}break;case"RECONNECT":this.log.info("Received RECONNECT request from Twitch.."),this.log.info("Disconnecting and reconnecting in ".concat(Math.round(this.reconnectTimer/1e3)," seconds..")),this.disconnect().catch(function(e){return t.log.error(e)}),setTimeout(function(){return t.connect().catch(function(e){return t.log.error(e)})},this.reconnectTimer);break;case"USERSTATE":e.tags.username=this.username,"mod"===e.tags["user-type"]&&(this.moderators[n]||(this.moderators[n]=[]),this.moderators[n].includes(this.username)||this.moderators[n].push(this.username)),b.isJustinfan(this.getUsername())||this.userstate[n]||(this.userstate[n]=i,this.lastJoined=n,this.channels.push(n),this.log.info("Joined ".concat(n)),this.emit("join",n,b.username(this.getUsername()),!0)),e.tags["emote-sets"]!==this.emotes&&this._updateEmoteset(e.tags["emote-sets"]),this.userstate[n]=i;break;case"GLOBALUSERSTATE":this.globaluserstate=i,this.emit("globaluserstate",i),void 0!==e.tags["emote-sets"]&&this._updateEmoteset(e.tags["emote-sets"]);break;case"ROOMSTATE":if(b.channel(this.lastJoined)===n&&this.emit("_promiseJoin",null,n),e.tags.channel=n,this.emit("roomstate",n,e.tags),!b.hasOwn(e.tags,"subs-only")){if(b.hasOwn(e.tags,"slow"))if("boolean"!=typeof e.tags.slow||e.tags.slow){var z=[n,!0,~~e.tags.slow];this.log.info("[".concat(n,"] This room is now in slow mode.")),this.emits(["slow","slowmode","_promiseSlow"],[z,z,[null]])}else{var $=[n,!1,0];this.log.info("[".concat(n,"] This room is no longer in slow mode.")),this.emits(["slow","slowmode","_promiseSlowoff"],[$,$,[null]])}if(b.hasOwn(e.tags,"followers-only"))if("-1"===e.tags["followers-only"]){var B=[n,!1,0];this.log.info("[".concat(n,"] This room is no longer in followers-only mode.")),this.emits(["followersonly","followersmode","_promiseFollowersoff"],[B,B,[null]])}else{var K=[n,!0,~~e.tags["followers-only"]];this.log.info("[".concat(n,"] This room is now in follower-only mode.")),this.emits(["followersonly","followersmode","_promiseFollowers"],[K,K,[null]])}}break;default:this.log.warn("Could not parse message from tmi.twitch.tv:\n".concat(JSON.stringify(e,null,4)))}else if("jtv"===e.prefix)if("MODE"===e.command)"+o"===s?(this.moderators[n]||(this.moderators[n]=[]),this.moderators[n].includes(e.params[2])||this.moderators[n].push(e.params[2]),this.emit("mod",n,e.params[2])):"-o"===s&&(this.moderators[n]||(this.moderators[n]=[]),this.moderators[n].filter(function(t){return t!==e.params[2]}),this.emit("unmod",n,e.params[2]));else this.log.warn("Could not parse message from jtv:\n".concat(JSON.stringify(e,null,4)));else switch(e.command){case"353":this.emit("names",e.params[2],e.params[3].split(" "));break;case"366":break;case"JOIN":var Q=e.prefix.split("!")[0];b.isJustinfan(this.getUsername())&&this.username===Q&&(this.lastJoined=n,this.channels.push(n),this.log.info("Joined ".concat(n)),this.emit("join",n,Q,!0)),this.username!==Q&&this.emit("join",n,Q,!1);break;case"PART":var X=!1,Y=e.prefix.split("!")[0];if(this.username===Y){X=!0,this.userstate[n]&&delete this.userstate[n];var Z=this.channels.indexOf(n);-1!==Z&&this.channels.splice(Z,1),-1!==(Z=this.opts.channels.indexOf(n))&&this.opts.channels.splice(Z,1),this.log.info("Left ".concat(n)),this.emit("_promisePart",null)}this.emit("part",n,Y,X);break;case"WHISPER":var ee=e.prefix.split("!")[0];this.log.info("[WHISPER] <".concat(ee,">: ").concat(s)),b.hasOwn(e.tags,"username")||(e.tags.username=ee),e.tags["message-type"]="whisper";var te=b.channel(e.tags.username);this.emits(["whisper","message"],[[te,e.tags,s,!1]]);break;case"PRIVMSG":if(e.tags.username=e.prefix.split("!")[0],"jtv"===e.tags.username){var ne=b.username(s.split(" ")[0]),se=s.includes("auto");if(s.includes("hosting you for")){var oe=b.extractNumber(s);this.emit("hosted",n,ne,oe,se)}else s.includes("hosting you")&&this.emit("hosted",n,ne,0,se)}else{var ie=b.get(this.opts.options.messagesLogLevel,"info"),re=b.actionMessage(s);if(e.tags["message-type"]=re?"action":"chat",s=re?re[1]:s,b.hasOwn(e.tags,"bits"))this.emit("cheer",n,e.tags,s);else{if(b.hasOwn(e.tags,"msg-id")){if("highlighted-message"===e.tags["msg-id"]){var ae=e.tags["msg-id"];this.emit("redeem",n,e.tags.username,ae,e.tags,s)}else if("skip-subs-mode-message"===e.tags["msg-id"]){var ce=e.tags["msg-id"];this.emit("redeem",n,e.tags.username,ce,e.tags,s)}}else if(b.hasOwn(e.tags,"custom-reward-id")){var ue=e.tags["custom-reward-id"];this.emit("redeem",n,e.tags.username,ue,e.tags,s)}re?(this.log[ie]("[".concat(n,"] *<").concat(e.tags.username,">: ").concat(s)),this.emits(["action","message"],[[n,e.tags,s,!1]])):(this.log[ie]("[".concat(n,"] <").concat(e.tags.username,">: ").concat(s)),this.emits(["chat","message"],[[n,e.tags,s,!1]]))}}break;default:this.log.warn("Could not parse message:\n".concat(JSON.stringify(e,null,4)))}}},y.prototype.connect=function(){var e=this;return new Promise(function(t,n){e.server=b.get(e.opts.connection.server,"irc-ws.chat.twitch.tv"),e.port=b.get(e.opts.connection.port,80),e.secure&&(e.port=443),443===e.port&&(e.secure=!0),e.reconnectTimer=e.reconnectTimer*e.reconnectDecay,e.reconnectTimer>=e.maxReconnectInterval&&(e.reconnectTimer=e.maxReconnectInterval),e._openConnection(),e.once("_promiseConnect",function(s){s?n(s):t([e.server,~~e.port])})})},y.prototype._openConnection=function(){var e="".concat(this.secure?"wss":"ws","://").concat(this.server,":").concat(this.port,"/"),t={};"agent"in this.opts.connection&&(t.agent=this.opts.connection.agent),this.ws=new l(e,"irc",t),this.ws.onmessage=this._onMessage.bind(this),this.ws.onerror=this._onError.bind(this),this.ws.onclose=this._onClose.bind(this),this.ws.onopen=this._onOpen.bind(this)},y.prototype._onOpen=function(){var e=this;this._isConnected()&&(this.log.info("Connecting to ".concat(this.server," on port ").concat(this.port,"..")),this.emit("connecting",this.server,~~this.port),this.username=b.get(this.opts.identity.username,b.justinfan()),this._getToken().then(function(t){var n=b.password(t);e.log.info("Sending authentication to server.."),e.emit("logon");var s="twitch.tv/tags twitch.tv/commands";e._skipMembership||(s+=" twitch.tv/membership"),e.ws.send("CAP REQ :"+s),n?e.ws.send("PASS ".concat(n)):b.isJustinfan(e.username)&&e.ws.send("PASS SCHMOOPIIE"),e.ws.send("NICK ".concat(e.username))}).catch(function(t){e.emits(["_promiseConnect","disconnected"],[[t],["Could not get a token."]])}))},y.prototype._getToken=function(){var e,t=this.opts.identity.password;return"function"==typeof t?(e=t())instanceof Promise?e:Promise.resolve(e):Promise.resolve(t)},y.prototype._onMessage=function(e){var t=this;e.data.trim().split("\r\n").forEach(function(e){var n=g.msg(e);n&&t.handleMessage(n)})},y.prototype._onError=function(){var e=this;this.moderators={},this.userstate={},this.globaluserstate={},clearInterval(this.pingLoop),clearTimeout(this.pingTimeout),clearTimeout(this._updateEmotesetsTimer),this.reason=null===this.ws?"Connection closed.":"Unable to connect.",this.emits(["_promiseConnect","disconnected"],[[this.reason]]),this.reconnect&&this.reconnections===this.maxReconnectAttempts&&(this.emit("maxreconnect"),this.log.error("Maximum reconnection attempts reached.")),this.reconnect&&!this.reconnecting&&this.reconnections<=this.maxReconnectAttempts-1&&(this.reconnecting=!0,this.reconnections=this.reconnections+1,this.log.error("Reconnecting in ".concat(Math.round(this.reconnectTimer/1e3)," seconds..")),this.emit("reconnect"),setTimeout(function(){e.reconnecting=!1,e.connect().catch(function(t){return e.log.error(t)})},this.reconnectTimer)),this.ws=null},y.prototype._onClose=function(){var e=this;this.moderators={},this.userstate={},this.globaluserstate={},clearInterval(this.pingLoop),clearTimeout(this.pingTimeout),clearTimeout(this._updateEmotesetsTimer),this.wasCloseCalled?(this.wasCloseCalled=!1,this.reason="Connection closed.",this.log.info(this.reason),this.emits(["_promiseConnect","_promiseDisconnect","disconnected"],[[this.reason],[null],[this.reason]])):(this.emits(["_promiseConnect","disconnected"],[[this.reason]]),this.reconnect&&this.reconnections===this.maxReconnectAttempts&&(this.emit("maxreconnect"),this.log.error("Maximum reconnection attempts reached.")),this.reconnect&&!this.reconnecting&&this.reconnections<=this.maxReconnectAttempts-1&&(this.reconnecting=!0,this.reconnections=this.reconnections+1,this.log.error("Could not connect to server. Reconnecting in ".concat(Math.round(this.reconnectTimer/1e3)," seconds..")),this.emit("reconnect"),setTimeout(function(){e.reconnecting=!1,e.connect().catch(function(t){return e.log.error(t)})},this.reconnectTimer))),this.ws=null},y.prototype._getPromiseDelay=function(){return this.currentLatency<=600?600:this.currentLatency+100},y.prototype._sendCommand=function(e,t,n,s){var o=this;return new Promise(function(i,r){if(!o._isConnected())return r("Not connected to server.");if(null!==e&&"number"!=typeof e||(null===e&&(e=o._getPromiseDelay()),b.promiseDelay(e).then(function(){return r("No response from Twitch.")})),null!==t){var a=b.channel(t);o.log.info("[".concat(a,"] Executing command: ").concat(n)),o.ws.send("PRIVMSG ".concat(a," :").concat(n))}else o.log.info("Executing command: ".concat(n)),o.ws.send(n);"function"==typeof s?s(i,r):i()})},y.prototype._sendMessage=function(e,t,n,s){var o=this;return new Promise(function(i,r){if(!o._isConnected())return r("Not connected to server.");if(b.isJustinfan(o.getUsername()))return r("Cannot send anonymous messages.");var a=b.channel(t);if(o.userstate[a]||(o.userstate[a]={}),n.length>=500){var c=b.splitLine(n,500);n=c[0],setTimeout(function(){o._sendMessage(e,t,c[1],function(){})},350)}o.ws.send("PRIVMSG ".concat(a," :").concat(n));var u={};Object.keys(o.emotesets).forEach(function(e){return o.emotesets[e].forEach(function(e){return(b.isRegex(e.code)?g.emoteRegex:g.emoteString)(n,e.code,e.id,u)})});var l=Object.assign(o.userstate[a],g.emotes({emotes:g.transformEmotes(u)||null})),m=b.get(o.opts.options.messagesLogLevel,"info"),h=b.actionMessage(n);h?(l["message-type"]="action",o.log[m]("[".concat(a,"] *<").concat(o.getUsername(),">: ").concat(h[1])),o.emits(["action","message"],[[a,l,h[1],!0]])):(l["message-type"]="chat",o.log[m]("[".concat(a,"] <").concat(o.getUsername(),">: ").concat(n)),o.emits(["chat","message"],[[a,l,n,!0]])),"function"==typeof s?s(i,r):i()})},y.prototype._updateEmoteset=function(e){var t=this,n=void 0!==e;if(n&&(e===this.emotes?n=!1:this.emotes=e),this._skipUpdatingEmotesets)n&&this.emit("emotesets",e,{});else{var s=function(){t._updateEmotesetsTimerDelay>0&&(clearTimeout(t._updateEmotesetsTimer),t._updateEmotesetsTimer=setTimeout(function(){return t._updateEmoteset(e)},t._updateEmotesetsTimerDelay))};this._getToken().then(function(n){var s="https://api.twitch.tv/kraken/chat/emoticon_images?emotesets=".concat(e),o={};return"fetchAgent"in t.opts.connection&&(o.agent=t.opts.connection.fetchAgent),m(s,i(i({},o),{},{headers:{Accept:"application/vnd.twitchtv.v5+json",Authorization:"OAuth ".concat(b.token(n)),"Client-ID":t.clientId}}))}).then(function(e){return e.json()}).then(function(n){t.emotesets=n.emoticon_sets||{},t.emit("emotesets",e,t.emotesets),s()}).catch(function(){return s()})}},y.prototype.getUsername=function(){return this.username},y.prototype.getOptions=function(){return this.opts},y.prototype.getChannels=function(){return this.channels},y.prototype.isMod=function(e,t){var n=b.channel(e);return this.moderators[n]||(this.moderators[n]=[]),this.moderators[n].includes(b.username(t))},y.prototype.readyState=function(){return null===this.ws?"CLOSED":["CONNECTING","OPEN","CLOSING","CLOSED"][this.ws.readyState]},y.prototype._isConnected=function(){return null!==this.ws&&1===this.ws.readyState},y.prototype.disconnect=function(){var e=this;return new Promise(function(t,n){null!==e.ws&&3!==e.ws.readyState?(e.wasCloseCalled=!0,e.log.info("Disconnecting from server.."),e.ws.close(),e.once("_promiseDisconnect",function(){return t([e.server,~~e.port])})):(e.log.error("Cannot disconnect from server. Socket is not opened or connection is already closing."),n("Cannot disconnect from server. Socket is not opened or connection is already closing."))})},y.prototype.off=y.prototype.removeListener,void 0!==t&&t.exports&&(t.exports=y),"undefined"!=typeof window&&(window.tmi={client:y,Client:y})}).call(this)}).call(this,"undefined"!=typeof global?global:"undefined"!=typeof self?self:"undefined"!=typeof window?window:{})},{"./api":5,"./commands":7,"./events":8,"./logger":9,"./parser":10,"./timer":11,"./utils":12,"node-fetch":2,ws:2}],7:[function(e,t,n){var s=e("./utils");function o(e,t){var n=this;return e=s.channel(e),t=s.get(t,30),this._sendCommand(null,e,"/followers ".concat(t),function(s,o){n.once("_promiseFollowers",function(n){n?o(n):s([e,~~t])})})}function i(e){var t=this;return e=s.channel(e),this._sendCommand(null,e,"/followersoff",function(n,s){t.once("_promiseFollowersoff",function(t){t?s(t):n([e])})})}function r(e){var t=this;return e=s.channel(e),this._sendCommand(null,null,"PART ".concat(e),function(n,s){t.once("_promisePart",function(t){t?s(t):n([e])})})}function a(e){var t=this;return e=s.channel(e),this._sendCommand(null,e,"/r9kbeta",function(n,s){t.once("_promiseR9kbeta",function(t){t?s(t):n([e])})})}function c(e){var t=this;return e=s.channel(e),this._sendCommand(null,e,"/r9kbetaoff",function(n,s){t.once("_promiseR9kbetaoff",function(t){t?s(t):n([e])})})}function u(e,t){var n=this;return e=s.channel(e),t=s.get(t,300),this._sendCommand(null,e,"/slow ".concat(t),function(s,o){n.once("_promiseSlow",function(n){n?o(n):s([e,~~t])})})}function l(e){var t=this;return e=s.channel(e),this._sendCommand(null,e,"/slowoff",function(n,s){t.once("_promiseSlowoff",function(t){t?s(t):n([e])})})}t.exports={action:function(e,t){return e=s.channel(e),t="ACTION ".concat(t,""),this._sendMessage(this._getPromiseDelay(),e,t,function(n,s){n([e,t])})},ban:function(e,t,n){var o=this;return e=s.channel(e),t=s.username(t),n=s.get(n,""),this._sendCommand(null,e,"/ban ".concat(t," ").concat(n),function(s,i){o.once("_promiseBan",function(o){o?i(o):s([e,t,n])})})},clear:function(e){var t=this;return e=s.channel(e),this._sendCommand(null,e,"/clear",function(n,s){t.once("_promiseClear",function(t){t?s(t):n([e])})})},color:function(e,t){var n=this;return t=s.get(t,e),this._sendCommand(null,"#tmijs","/color ".concat(t),function(e,s){n.once("_promiseColor",function(n){n?s(n):e([t])})})},commercial:function(e,t){var n=this;return e=s.channel(e),t=s.get(t,30),this._sendCommand(null,e,"/commercial ".concat(t),function(s,o){n.once("_promiseCommercial",function(n){n?o(n):s([e,~~t])})})},deletemessage:function(e,t){var n=this;return e=s.channel(e),this._sendCommand(null,e,"/delete ".concat(t),function(t,s){n.once("_promiseDeletemessage",function(n){n?s(n):t([e])})})},emoteonly:function(e){var t=this;return e=s.channel(e),this._sendCommand(null,e,"/emoteonly",function(n,s){t.once("_promiseEmoteonly",function(t){t?s(t):n([e])})})},emoteonlyoff:function(e){var t=this;return e=s.channel(e),this._sendCommand(null,e,"/emoteonlyoff",function(n,s){t.once("_promiseEmoteonlyoff",function(t){t?s(t):n([e])})})},followersonly:o,followersmode:o,followersonlyoff:i,followersmodeoff:i,host:function(e,t){var n=this;return e=s.channel(e),t=s.username(t),this._sendCommand(2e3,e,"/host ".concat(t),function(s,o){n.once("_promiseHost",function(n,i){n?o(n):s([e,t,~~i])})})},join:function(e){var t=this;return e=s.channel(e),this._sendCommand(void 0,null,"JOIN ".concat(e),function(n,o){var i="_promiseJoin",r=!1,a=function(c,u){e===s.channel(u)&&(t.removeListener(i,a),r=!0,c?o(c):n([e]))};t.on(i,a);var c=t._getPromiseDelay();s.promiseDelay(c).then(function(){r||t.emit(i,"No response from Twitch.",e)})})},mod:function(e,t){var n=this;return e=s.channel(e),t=s.username(t),this._sendCommand(null,e,"/mod ".concat(t),function(s,o){n.once("_promiseMod",function(n){n?o(n):s([e,t])})})},mods:function(e){var t=this;return e=s.channel(e),this._sendCommand(null,e,"/mods",function(n,s){t.once("_promiseMods",function(o,i){o?s(o):(i.forEach(function(n){t.moderators[e]||(t.moderators[e]=[]),t.moderators[e].includes(n)||t.moderators[e].push(n)}),n(i))})})},part:r,leave:r,ping:function(){var e=this;return this._sendCommand(null,null,"PING",function(t,n){e.latency=new Date,e.pingTimeout=setTimeout(function(){null!==e.ws&&(e.wasCloseCalled=!1,e.log.error("Ping timeout."),e.ws.close(),clearInterval(e.pingLoop),clearTimeout(e.pingTimeout))},s.get(e.opts.connection.timeout,9999)),e.once("_promisePing",function(e){return t([parseFloat(e)])})})},r9kbeta:a,r9kmode:a,r9kbetaoff:c,r9kmodeoff:c,raw:function(e){return this._sendCommand(null,null,e,function(t,n){t([e])})},say:function(e,t){return e=s.channel(e),t.startsWith(".")&&!t.startsWith("..")||t.startsWith("/")||t.startsWith("\\")?"me "===t.substr(1,3)?this.action(e,t.substr(4)):this._sendCommand(null,e,t,function(n,s){n([e,t])}):this._sendMessage(this._getPromiseDelay(),e,t,function(n,s){n([e,t])})},slow:u,slowmode:u,slowoff:l,slowmodeoff:l,subscribers:function(e){var t=this;return e=s.channel(e),this._sendCommand(null,e,"/subscribers",function(n,s){t.once("_promiseSubscribers",function(t){t?s(t):n([e])})})},subscribersoff:function(e){var t=this;return e=s.channel(e),this._sendCommand(null,e,"/subscribersoff",function(n,s){t.once("_promiseSubscribersoff",function(t){t?s(t):n([e])})})},timeout:function(e,t,n,o){var i=this;return e=s.channel(e),t=s.username(t),null===n||s.isInteger(n)||(o=n,n=300),n=s.get(n,300),o=s.get(o,""),this._sendCommand(null,e,"/timeout ".concat(t," ").concat(n," ").concat(o),function(s,r){i.once("_promiseTimeout",function(i){i?r(i):s([e,t,~~n,o])})})},unban:function(e,t){var n=this;return e=s.channel(e),t=s.username(t),this._sendCommand(null,e,"/unban ".concat(t),function(s,o){n.once("_promiseUnban",function(n){n?o(n):s([e,t])})})},unhost:function(e){var t=this;return e=s.channel(e),this._sendCommand(2e3,e,"/unhost",function(n,s){t.once("_promiseUnhost",function(t){t?s(t):n([e])})})},unmod:function(e,t){var n=this;return e=s.channel(e),t=s.username(t),this._sendCommand(null,e,"/unmod ".concat(t),function(s,o){n.once("_promiseUnmod",function(n){n?o(n):s([e,t])})})},unvip:function(e,t){var n=this;return e=s.channel(e),t=s.username(t),this._sendCommand(null,e,"/unvip ".concat(t),function(s,o){n.once("_promiseUnvip",function(n){n?o(n):s([e,t])})})},vip:function(e,t){var n=this;return e=s.channel(e),t=s.username(t),this._sendCommand(null,e,"/vip ".concat(t),function(s,o){n.once("_promiseVip",function(n){n?o(n):s([e,t])})})},vips:function(e){var t=this;return e=s.channel(e),this._sendCommand(null,e,"/vips",function(e,n){t.once("_promiseVips",function(t,s){t?n(t):e(s)})})},whisper:function(e,t){var n=this;return(e=s.username(e))===this.getUsername()?Promise.reject("Cannot send a whisper to the same account."):this._sendCommand(null,"#tmijs","/w ".concat(e," ").concat(t),function(e,t){n.once("_promiseWhisper",function(e){e&&t(e)})}).catch(function(o){if(o&&"string"==typeof o&&0!==o.indexOf("No response from Twitch."))throw o;var i=s.channel(e),r=Object.assign({"message-type":"whisper","message-id":null,"thread-id":null,username:n.getUsername()},n.globaluserstate);return n.emits(["whisper","message"],[[i,r,t,!0],[i,r,t,!0]]),[e,t]})}}},{"./utils":12}],8:[function(e,t,n){function s(e){return s="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},s(e)}function o(){this._events=this._events||{},this._maxListeners=this._maxListeners||void 0}function i(e){return"function"==typeof e}function r(e){return"object"===s(e)&&null!==e}function a(e){return void 0===e}t.exports=o,o.EventEmitter=o,o.prototype._events=void 0,o.prototype._maxListeners=void 0,o.defaultMaxListeners=10,o.prototype.setMaxListeners=function(e){if("number"!=typeof e||e<0||isNaN(e))throw TypeError("n must be a positive number");return this._maxListeners=e,this},o.prototype.emit=function(e){var t,n,s,o,c,u;if(this._events||(this._events={}),"error"===e&&(!this._events.error||r(this._events.error)&&!this._events.error.length)){if((t=arguments[1])instanceof Error)throw t;throw TypeError('Uncaught, unspecified "error" event.')}if(a(n=this._events[e]))return!1;if(i(n))switch(arguments.length){case 1:n.call(this);break;case 2:n.call(this,arguments[1]);break;case 3:n.call(this,arguments[1],arguments[2]);break;default:o=Array.prototype.slice.call(arguments,1),n.apply(this,o)}else if(r(n))for(o=Array.prototype.slice.call(arguments,1),s=(u=n.slice()).length,c=0;c<s;c++)u[c].apply(this,o);return!0},o.prototype.addListener=function(e,t){var n;if(!i(t))throw TypeError("listener must be a function");return this._events||(this._events={}),this._events.newListener&&this.emit("newListener",e,i(t.listener)?t.listener:t),this._events[e]?r(this._events[e])?this._events[e].push(t):this._events[e]=[this._events[e],t]:this._events[e]=t,r(this._events[e])&&!this._events[e].warned&&(n=a(this._maxListeners)?o.defaultMaxListeners:this._maxListeners)&&n>0&&this._events[e].length>n&&(this._events[e].warned=!0,console.error("(node) warning: possible EventEmitter memory leak detected. %d listeners added. Use emitter.setMaxListeners() to increase limit.",this._events[e].length),"function"==typeof console.trace&&console.trace()),this},o.prototype.on=o.prototype.addListener,o.prototype.once=function(e,t){if(!i(t))throw TypeError("listener must be a function");var n=!1;if(this._events.hasOwnProperty(e)&&"_"===e.charAt(0)){var s=1,o=e;for(var r in this._events)this._events.hasOwnProperty(r)&&r.startsWith(o)&&s++;e+=s}function a(){"_"!==e.charAt(0)||isNaN(e.substr(e.length-1))||(e=e.substring(0,e.length-1)),this.removeListener(e,a),n||(n=!0,t.apply(this,arguments))}return a.listener=t,this.on(e,a),this},o.prototype.removeListener=function(e,t){var n,s,o,a;if(!i(t))throw TypeError("listener must be a function");if(!this._events||!this._events[e])return this;if(o=(n=this._events[e]).length,s=-1,n===t||i(n.listener)&&n.listener===t){if(delete this._events[e],this._events.hasOwnProperty(e+"2")&&"_"===e.charAt(0)){var c=e;for(var u in this._events)this._events.hasOwnProperty(u)&&u.startsWith(c)&&(isNaN(parseInt(u.substr(u.length-1)))||(this._events[e+parseInt(u.substr(u.length-1)-1)]=this._events[u],delete this._events[u]));this._events[e]=this._events[e+"1"],delete this._events[e+"1"]}this._events.removeListener&&this.emit("removeListener",e,t)}else if(r(n)){for(a=o;a-- >0;)if(n[a]===t||n[a].listener&&n[a].listener===t){s=a;break}if(s<0)return this;1===n.length?(n.length=0,delete this._events[e]):n.splice(s,1),this._events.removeListener&&this.emit("removeListener",e,t)}return this},o.prototype.removeAllListeners=function(e){var t,n;if(!this._events)return this;if(!this._events.removeListener)return 0===arguments.length?this._events={}:this._events[e]&&delete this._events[e],this;if(0===arguments.length){for(t in this._events)"removeListener"!==t&&this.removeAllListeners(t);return this.removeAllListeners("removeListener"),this._events={},this}if(i(n=this._events[e]))this.removeListener(e,n);else if(n)for(;n.length;)this.removeListener(e,n[n.length-1]);return delete this._events[e],this},o.prototype.listeners=function(e){return this._events&&this._events[e]?i(this._events[e])?[this._events[e]]:this._events[e].slice():[]},o.prototype.listenerCount=function(e){if(this._events){var t=this._events[e];if(i(t))return 1;if(t)return t.length}return 0},o.listenerCount=function(e,t){return e.listenerCount(t)}},{}],9:[function(e,t,n){var s=e("./utils"),o="info",i={trace:0,debug:1,info:2,warn:3,error:4,fatal:5};function r(e){return function(t){i[e]>=i[o]&&console.log("[".concat(s.formatDate(new Date),"] ").concat(e,": ").concat(t))}}t.exports={setLevel:function(e){o=e},trace:r("trace"),debug:r("debug"),info:r("info"),warn:r("warn"),error:r("error"),fatal:r("fatal")}},{"./utils":12}],10:[function(e,t,n){var s=e("./utils"),o=/\S+/g;function i(e,t){var n=arguments.length>2&&void 0!==arguments[2]?arguments[2]:",",s=arguments.length>3&&void 0!==arguments[3]?arguments[3]:"/",o=arguments.length>4?arguments[4]:void 0,i=e[t];if(void 0===i)return e;var r="string"==typeof i;if(e[t+"-raw"]=r?i:null,!0===i)return e[t]=null,e;if(e[t]={},r)for(var a=i.split(n),c=0;c<a.length;c++){var u=a[c].split(s),l=u[1];void 0!==o&&l&&(l=l.split(o)),e[t][u[0]]=l||null}return e}t.exports={badges:function(e){return i(e,"badges")},badgeInfo:function(e){return i(e,"badge-info")},emotes:function(e){return i(e,"emotes","/",":",",")},emoteRegex:function(e,t,n,i){o.lastIndex=0;for(var r,a=new RegExp("(\\b|^|\\s)"+s.unescapeHtml(t)+"(\\b|$|\\s)");null!==(r=o.exec(e));)a.test(r[0])&&(i[n]=i[n]||[],i[n].push([r.index,o.lastIndex-1]))},emoteString:function(e,t,n,i){var r;for(o.lastIndex=0;null!==(r=o.exec(e));)r[0]===s.unescapeHtml(t)&&(i[n]=i[n]||[],i[n].push([r.index,o.lastIndex-1]))},transformEmotes:function(e){var t="";return Object.keys(e).forEach(function(n){t="".concat(t+n,":"),e[n].forEach(function(e){return t="".concat(t+e.join("-"),",")}),t="".concat(t.slice(0,-1),"/")}),t.slice(0,-1)},formTags:function(e){var t=[];for(var n in e){var o=s.escapeIRC(e[n]);t.push("".concat(n,"=").concat(o))}return"@".concat(t.join(";"))},msg:function(e){var t={raw:e,tags:{},prefix:null,command:null,params:[]},n=0,s=0;if(64===e.charCodeAt(0)){if(-1===(s=e.indexOf(" ")))return null;for(var o=e.slice(1,s).split(";"),i=0;i<o.length;i++){var r=o[i],a=r.split("=");t.tags[a[0]]=r.substring(r.indexOf("=")+1)||!0}n=s+1}for(;32===e.charCodeAt(n);)n++;if(58===e.charCodeAt(n)){if(-1===(s=e.indexOf(" ",n)))return null;for(t.prefix=e.slice(n+1,s),n=s+1;32===e.charCodeAt(n);)n++}if(-1===(s=e.indexOf(" ",n)))return e.length>n?(t.command=e.slice(n),t):null;for(t.command=e.slice(n,s),n=s+1;32===e.charCodeAt(n);)n++;for(;n<e.length;){if(s=e.indexOf(" ",n),58===e.charCodeAt(n)){t.params.push(e.slice(n+1));break}if(-1===s){if(-1===s){t.params.push(e.slice(n));break}}else for(t.params.push(e.slice(n,s)),n=s+1;32===e.charCodeAt(n);)n++}return t}}},{"./utils":12}],11:[function(e,t,n){function s(e){return s="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},s(e)}function o(e,t){for(var n=0;n<t.length;n++){var s=t[n];s.enumerable=s.enumerable||!1,s.configurable=!0,"value"in s&&(s.writable=!0),Object.defineProperty(e,i(s.key),s)}}function i(e){var t=function(e,t){if("object"!=s(e)||!e)return e;var n=e[Symbol.toPrimitive];if(void 0!==n){var o=n.call(e,t||"default");if("object"!=s(o))return o;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==s(t)?t:t+""}var r=function(){return e=function e(t){!function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,e),this.queue=[],this.index=0,this.defaultDelay=void 0===t?3e3:t},(t=[{key:"add",value:function(e,t){this.queue.push({fn:e,delay:t})}},{key:"next",value:function(){var e=this,t=this.index++,n=this.queue[t];if(n){var s=this.queue[this.index];if(n.fn(),s){var o=void 0===s.delay?this.defaultDelay:s.delay;setTimeout(function(){return e.next()},o)}}}}])&&o(e.prototype,t),n&&o(e,n),Object.defineProperty(e,"prototype",{writable:!1}),e;var e,t,n}();t.exports=r},{}],12:[function(e,t,n){(function(e){(function(){function n(e){return n="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},n(e)}var s=/^\u0001ACTION ([^\u0001]+)\u0001$/,o=/^(justinfan)(\d+$)/,i=/\\([sn:r\\])/g,r=/([ \n;\r\\])/g,a={s:" ",n:"",":":";",r:""},c={" ":"s","\n":"n",";":":","\r":"r"},u=new RegExp("^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$","i"),l=/[|\\^$*+?:#]/,m=t.exports={get:function(e,t){return void 0===e?t:e},hasOwn:function(e,t){return{}.hasOwnProperty.call(e,t)},promiseDelay:function(e){return new Promise(function(t){return setTimeout(t,e)})},isFinite:function(e){function t(t){return e.apply(this,arguments)}return t.toString=function(){return e.toString()},t}(function(e){return isFinite(e)&&!isNaN(parseFloat(e))}),toNumber:function(e,t){if(null===e)return 0;var n=Math.pow(10,m.isFinite(t)?t:0);return Math.round(e*n)/n},isInteger:function(e){return!isNaN(m.toNumber(e,0))},isRegex:function(e){return l.test(e)},isURL:function(e){return u.test(e)},justinfan:function(){return"justinfan".concat(Math.floor(8e4*Math.random()+1e3))},isJustinfan:function(e){return o.test(e)},channel:function(e){var t=(e||"").toLowerCase();return"#"===t[0]?t:"#"+t},username:function(e){var t=(e||"").toLowerCase();return"#"===t[0]?t.slice(1):t},token:function(e){return e?e.toLowerCase().replace("oauth:",""):""},password:function(e){var t=m.token(e);return t?"oauth:".concat(t):""},actionMessage:function(e){return e.match(s)},replaceAll:function(e,t){if(null==e)return null;for(var n in t)e=e.replace(new RegExp(n,"g"),t[n]);return e},unescapeHtml:function(e){return e.replace(/\\&amp\\;/g,"&").replace(/\\&lt\\;/g,"<").replace(/\\&gt\\;/g,">").replace(/\\&quot\\;/g,'"').replace(/\\&#039\\;/g,"'")},unescapeIRC:function(e){return e&&"string"==typeof e&&e.includes("\\")?e.replace(i,function(e,t){return t in a?a[t]:t}):e},escapeIRC:function(e){return e&&"string"==typeof e?e.replace(r,function(e,t){return t in c?"\\".concat(c[t]):t}):e},addWord:function(e,t){return e.length?e+" "+t:e+t},splitLine:function(e,t){var n=e.substring(0,t).lastIndexOf(" ");return-1===n&&(n=t-1),[e.substring(0,n),e.substring(n+1)]},extractNumber:function(e){for(var t=e.split(" "),n=0;n<t.length;n++)if(m.isInteger(t[n]))return~~t[n];return 0},formatDate:function(e){var t=e.getHours(),n=e.getMinutes();return n=(n<10?"0":"")+n,"".concat(t=(t<10?"0":"")+t,":").concat(n)},inherits:function(e,t){e.super_=t;var n=function(){};n.prototype=t.prototype,e.prototype=new n,e.prototype.constructor=e},isNode:function(){try{return"object"===(void 0===e?"undefined":n(e))&&"[object process]"===Object.prototype.toString.call(e)}catch(e){}return!1}}}).call(this)}).call(this,e("_process"))},{_process:3}]},{},[1])(1)});
-
 </script>
-<!-- Bootstrap 5 JS Bundle (на случай интерактивных компонентов Bootstrap) -->
+
+<!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- ============================================================ -->
+<!-- ОСНОВНАЯ ЛОГИКА ПРИЛОЖЕНИЯ (с режимом CS) -->
+<!-- ============================================================ -->
 <script>
 /* =========================================================================
-   TWITCH РАЗДАЧА — логика приложения
+   TWITCH РАЗДАЧА — логика приложения (с поддержкой CS)
    ========================================================================= */
 
 // ---------- Константы localStorage ----------
@@ -750,6 +968,7 @@ const eliminationGrid = document.getElementById('eliminationGrid');
 const eliminationEmptyHint = document.getElementById('eliminationEmptyHint');
 const modeRouletteRadio = document.getElementById('modeRoulette');
 const modeEliminationRadio = document.getElementById('modeElimination');
+const modeCsRadio = document.getElementById('modeCs');
 const dropsTickerTrack = document.getElementById('dropsTickerTrack');
 const winnerChatModalEl = document.getElementById('winnerChatModal');
 const winnerModal = new bootstrap.Modal(winnerChatModalEl);
@@ -761,8 +980,34 @@ const modalRepeatWarning = document.getElementById('modalRepeatWarning');
 const modalChatFeed = document.getElementById('modalChatFeed');
 const modalFeedEmpty = document.getElementById('modalFeedEmpty');
 const rerollBtn = document.getElementById('rerollBtn');
+
+// ---------- Элементы для режима CS ----------
+const csWrap = document.getElementById('csWrap');
+const csVideo = document.getElementById('csVideo');
+const csWinnerDisplay = document.getElementById('csWinnerDisplay');
+const csWinnerName = document.getElementById('csWinnerName');
+const terroristPlayers = [
+  document.getElementById('terroristPlayer1'),
+  document.getElementById('terroristPlayer2'),
+  document.getElementById('terroristPlayer3'),
+  document.getElementById('terroristPlayer4'),
+  document.getElementById('terroristPlayer5')
+];
+const counterPlayers = [
+  document.getElementById('counterPlayer1'),
+  document.getElementById('counterPlayer2'),
+  document.getElementById('counterPlayer3'),
+  document.getElementById('counterPlayer4'),
+  document.getElementById('counterPlayer5')
+];
+
 let rerollRequested = false;
 let closeWithoutCooldown = false;
+
+// Переменные для CS режима
+let csSelectedParticipants = [];
+let csEndedHandler = null;
+let csTimeout = null;
 
 const WHEEL_COLORS = ['#9146FF', '#5A2FA8', '#bf94ff', '#3d2a63', '#7c3aed', '#2a1f42'];
 
@@ -870,7 +1115,6 @@ function removeHistoryEntry(timestamp) {
   saveHistory(filtered);
 }
 
-// Помечаем запись в полном логе выпадений как рерольнутую (сама запись не удаляется)
 function markDropRerolled(timestamp) {
   const drops = getDrops();
   const entry = drops.find(d => d.timestamp === timestamp);
@@ -889,7 +1133,6 @@ function getLastWinTimestamp(username) {
   return entry ? entry.timestamp : null;
 }
 
-// Ищем предыдущую победу за этот стрим в ПОЛНОМ ЛОГЕ (не удаляется)
 function findPreviousWinThisStream(username, excludeTimestamp) {
   const drops = getDrops();
   return drops.find(
@@ -920,7 +1163,6 @@ function formatDate(timestamp) {
   });
 }
 
-// Человекочитаемое "сколько времени назад" — для метки реролла
 function formatTimeAgo(timestamp) {
   const diffSec = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
   if (diffSec < 60) return `${diffSec} сек. назад`;
@@ -994,9 +1236,7 @@ function renderDropsHistory() {
     const line = document.createElement('div');
     line.className = 'drops-history-line';
 
-    // Сколько раз этот ник вообще выпадал (по всему логу)
     const dropCount = drops.filter(d => d.username === entry.username).length;
-    // Сколько раз этот ник числится победителем в "Истории победителей"
     const winCount = winnersHistory.filter(h => h.username === entry.username).length;
 
     let metaHtml = `<span class="drops-count"><i class="bi bi-arrow-repeat"></i> выпадал ${dropCount} раз(а)</span>`;
@@ -1066,46 +1306,43 @@ function renderParticipants() {
 }
 
 // =========================================================================
-// РУЛЕТКА
+// РУЛЕТКА + ВЫБЫВАНИЕ + CS
 // =========================================================================
 
-let currentMode = 'roulette'; // 'roulette' | 'elimination' — выбранный режим розыгрыша
+let currentMode = 'roulette'; // 'roulette' | 'elimination' | 'cs'
 
 function getEligibleParticipants() {
   return [...participants.entries()].filter(([username]) => !isOnCooldown(username));
 }
 
-/**
- * Обновляет превью текущего режима (колесо рулетки или сетку "Выбывание")
- * в соответствии с выбранным режимом — вызывается вместо прямого drawWheel()
- * везде, где раньше просто перерисовывался список участников.
- */
 function refreshDrawPreview() {
   if (currentMode === 'elimination') {
     renderEliminationPreview();
+  } else if (currentMode === 'cs') {
+    renderCsPreview();
   } else {
     drawWheel();
   }
 }
 
-/**
- * Переключает видимость блоков колеса рулетки и сетки "Выбывание"
- * в зависимости от выбранного режима.
- */
 function updateModeUI() {
   const isElimination = currentMode === 'elimination';
-  wheelWrap.style.display = isElimination ? 'none' : 'block';
+  const isCs = currentMode === 'cs';
+  wheelWrap.style.display = (isElimination || isCs) ? 'none' : 'block';
   eliminationWrap.style.display = isElimination ? 'block' : 'none';
-  drawBtn.innerHTML = isElimination
-    ? '<i class="bi bi-skull"></i> Начать выбывание!'
-    : '<i class="bi bi-dice-5"></i> Крутить рулетку!';
+  csWrap.style.display = isCs ? 'block' : 'none';
+
+  if (isCs) {
+    drawBtn.innerHTML = '<i class="bi bi-crosshair"></i> Начать отбор КС!';
+  } else if (isElimination) {
+    drawBtn.innerHTML = '<i class="bi bi-skull"></i> Начать выбывание!';
+  } else {
+    drawBtn.innerHTML = '<i class="bi bi-dice-5"></i> Крутить рулетку!';
+  }
+
   refreshDrawPreview();
 }
 
-/**
- * Отрисовывает предварительный список участников для режима "Выбывание"
- * (простые карточки без анимации — сама анимация выбывания в runElimination()).
- */
 function renderEliminationPreview() {
   const eligible = getEligibleParticipants();
   eliminationGrid.querySelectorAll('.elimination-chip').forEach(el => el.remove());
@@ -1124,48 +1361,23 @@ function renderEliminationPreview() {
   });
 }
 
-/**
- * Анимация "Выбывание": все участники, кроме заранее определённого победителя
- * (winnerIndex уже выбран честным случайным образом в drawWinner — здесь только
- * визуализация), поочерёдно "выбывают" в случайном порядке, пока не останется один.
- */
-function runElimination(eligible, winnerIndex, onFinish) {
-  eliminationGrid.querySelectorAll('.elimination-chip').forEach(el => el.remove());
-  eliminationEmptyHint.style.display = 'none';
+function renderCsPreview() {
+  const eligible = getEligibleParticipants();
+  terroristPlayers.forEach(el => el.textContent = '');
+  counterPlayers.forEach(el => el.textContent = '');
 
-  const chips = eligible.map(([username, data]) => {
-    const chip = document.createElement('div');
-    chip.className = 'elimination-chip';
-    chip.textContent = data.displayName;
-    eliminationGrid.appendChild(chip);
-    return chip;
-  });
-
-  // Случайный порядок выбывания для всех, кроме победителя (Fisher-Yates)
-  const eliminationOrder = eligible.map((_, idx) => idx).filter(idx => idx !== winnerIndex);
-  for (let i = eliminationOrder.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [eliminationOrder[i], eliminationOrder[j]] = [eliminationOrder[j], eliminationOrder[i]];
+  if (eligible.length === 0) {
+    terroristPlayers[0].textContent = 'Нет участников';
+    return;
   }
 
-  const totalSteps = eliminationOrder.length;
-  let step = 0;
-
-  function eliminateNext() {
-    if (step >= totalSteps) {
-      chips[winnerIndex].classList.add('survivor');
-      setTimeout(onFinish, 1000);
-      return;
-    }
-    const idx = eliminationOrder[step];
-    chips[idx].classList.add('eliminated');
-    step++;
-    // Постепенно ускоряемся к концу для динамики
-    const delay = Math.max(110, 650 - step * 12);
-    setTimeout(eliminateNext, delay);
+  const selected = eligible.slice(0, Math.min(10, eligible.length));
+  for (let i = 0; i < 5 && i < selected.length; i++) {
+    terroristPlayers[i].textContent = selected[i][1].displayName;
   }
-
-  setTimeout(eliminateNext, 500);
+  for (let i = 0; i < 5 && i + 5 < selected.length; i++) {
+    counterPlayers[i].textContent = selected[i+5][1].displayName;
+  }
 }
 
 function drawWheel() {
@@ -1236,11 +1448,197 @@ function spinWheelTo(eligibleCount, winnerIndex, onFinish) {
   wheelCanvas.addEventListener('transitionend', handleEnd);
 }
 
+function runElimination(eligible, winnerIndex, onFinish) {
+  eliminationGrid.querySelectorAll('.elimination-chip').forEach(el => el.remove());
+  eliminationEmptyHint.style.display = 'none';
+
+  const chips = eligible.map(([username, data]) => {
+    const chip = document.createElement('div');
+    chip.className = 'elimination-chip';
+    chip.textContent = data.displayName;
+    eliminationGrid.appendChild(chip);
+    return chip;
+  });
+
+  const eliminationOrder = eligible.map((_, idx) => idx).filter(idx => idx !== winnerIndex);
+  for (let i = eliminationOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [eliminationOrder[i], eliminationOrder[j]] = [eliminationOrder[j], eliminationOrder[i]];
+  }
+
+  const totalSteps = eliminationOrder.length;
+  let step = 0;
+
+  function eliminateNext() {
+    if (step >= totalSteps) {
+      chips[winnerIndex].classList.add('survivor');
+      setTimeout(onFinish, 1000);
+      return;
+    }
+    const idx = eliminationOrder[step];
+    chips[idx].classList.add('eliminated');
+    step++;
+    const delay = Math.max(110, 650 - step * 12);
+    setTimeout(eliminateNext, delay);
+  }
+
+  setTimeout(eliminateNext, 500);
+}
+
 // =========================================================================
-// ОКНО ПОБЕДИТЕЛЯ
+// ОСНОВНАЯ ФУНКЦИЯ РОЗЫГРЫША
 // =========================================================================
 
-const RESPONSE_TIMEOUT_SECONDS = 16; // после этого времени секундомер замирает и загорается красным
+function drawWinner() {
+  if (isSpinning) return;
+
+  if (participants.size === 0) {
+    log('Нет участников для розыгрыша.', 'warn');
+    winnerReveal.textContent = 'Список участников пуст — сначала соберите участников в чате.';
+    winnerReveal.classList.add('show');
+    return;
+  }
+
+  const eligible = getEligibleParticipants();
+
+  if (eligible.length === 0) {
+    log('Все участники на кулдауне — розыгрыш невозможен.', 'warn');
+    winnerReveal.textContent = 'Все участники сейчас на кулдауне 🔒 — победителя выбрать нельзя.';
+    winnerReveal.classList.add('show');
+    return;
+  }
+
+  winnerReveal.classList.remove('show');
+
+  // РЕЖИМ CS
+  if (currentMode === 'cs') {
+    startCsRoulette(eligible);
+    return;
+  }
+
+  // Остальные режимы (рулетка и выбывание)
+  const winnerIndex = Math.floor(Math.random() * eligible.length);
+  const [winnerUsername, winnerData] = eligible[winnerIndex];
+
+  isSpinning = true;
+  drawBtn.disabled = true;
+  clearParticipantsBtn.disabled = true;
+  log(`Розыгрыш среди ${eligible.length} участников (режим: ${currentMode === 'elimination' ? 'выбывание' : 'рулетка'})...`, 'info');
+
+  refreshDrawPreview();
+
+  const onDrawFinish = () => {
+    const historyTimestamp = addWinnerToHistory(winnerUsername, winnerData.displayName, currentKeyword, currentChannel || 'неизвестно');
+    log(`Победитель розыгрыша: ${winnerData.displayName}`, 'success');
+
+    winnerReveal.innerHTML = `🎉 Победитель: <strong>${escapeHtml(winnerData.displayName)}</strong> 🎉`;
+    winnerReveal.classList.add('show');
+
+    renderParticipants();
+    renderHistory();
+    refreshDrawPreview();
+
+    isSpinning = false;
+    drawBtn.disabled = false;
+    clearParticipantsBtn.disabled = false;
+
+    openWinnerWatch(winnerUsername, winnerData.displayName, historyTimestamp);
+  };
+
+  if (currentMode === 'elimination') {
+    runElimination(eligible, winnerIndex, onDrawFinish);
+  } else {
+    spinWheelTo(eligible.length, winnerIndex, onDrawFinish);
+  }
+}
+
+// =========================================================================
+// РЕЖИМ CS — ОТДЕЛЬНАЯ ФУНКЦИЯ
+// =========================================================================
+
+function startCsRoulette(eligible) {
+  // Перемешиваем и берём до 10 участников
+  const shuffled = eligible.slice().sort(() => Math.random() - 0.5);
+  const selected = shuffled.slice(0, Math.min(10, shuffled.length));
+  csSelectedParticipants = selected;
+
+  // Очищаем слоты и заполняем их
+  terroristPlayers.forEach(el => el.textContent = '');
+  counterPlayers.forEach(el => el.textContent = '');
+  for (let i = 0; i < 5 && i < selected.length; i++) {
+    terroristPlayers[i].textContent = selected[i][1].displayName;
+  }
+  for (let i = 0; i < 5 && i + 5 < selected.length; i++) {
+    counterPlayers[i].textContent = selected[i+5][1].displayName;
+  }
+
+  // Скрываем старый оверлей
+  csWinnerDisplay.style.display = 'none';
+
+  // Блокируем кнопки
+  isSpinning = true;
+  drawBtn.disabled = true;
+  clearParticipantsBtn.disabled = true;
+
+  // Запускаем видео
+  csVideo.currentTime = 0;
+  csVideo.play().catch(e => log('Ошибка воспроизведения видео: ' + e, 'error'));
+
+  // Обработчик окончания видео
+  const onEnded = () => {
+    csVideo.removeEventListener('ended', onEnded);
+    clearTimeout(csTimeout);
+
+    if (csSelectedParticipants.length === 0) {
+      log('Нет участников для выбора победителя в КС', 'error');
+      isSpinning = false;
+      drawBtn.disabled = false;
+      clearParticipantsBtn.disabled = false;
+      return;
+    }
+
+    const winnerIndex = Math.floor(Math.random() * csSelectedParticipants.length);
+    const [winnerUsername, winnerData] = csSelectedParticipants[winnerIndex];
+
+    // Показываем оверлей с победителем
+    csWinnerName.textContent = winnerData.displayName;
+    csWinnerDisplay.style.display = 'block';
+
+    // Добавляем в историю и логируем
+    const historyTimestamp = addWinnerToHistory(winnerUsername, winnerData.displayName, currentKeyword, currentChannel || 'неизвестно');
+    log(`Победитель КС: ${winnerData.displayName}`, 'success');
+
+    // Обновляем интерфейс
+    renderParticipants();
+    renderHistory();
+    refreshDrawPreview();
+
+    // Открываем модальное окно с секундомером
+    openWinnerWatch(winnerUsername, winnerData.displayName, historyTimestamp);
+
+    // Разблокируем кнопки
+    isSpinning = false;
+    drawBtn.disabled = false;
+    clearParticipantsBtn.disabled = false;
+  };
+
+  csVideo.addEventListener('ended', onEnded);
+
+  // Защита от «зависшего» видео — принудительный выбор через 10 сек
+  csTimeout = setTimeout(() => {
+    if (csVideo.readyState < 3) {
+      csVideo.removeEventListener('ended', onEnded);
+      log('Видео не загрузилось, принудительный выбор победителя', 'warn');
+      onEnded();
+    }
+  }, 10000);
+}
+
+// =========================================================================
+// ОКНО ПОБЕДИТЕЛЯ (секундомер)
+// =========================================================================
+
+const RESPONSE_TIMEOUT_SECONDS = 16;
 
 function openWinnerWatch(username, displayName, historyTimestamp) {
   if (winnerWatch && winnerWatch.intervalId) {
@@ -1274,7 +1672,6 @@ function openWinnerWatch(username, displayName, historyTimestamp) {
     modalMessageStats.textContent = 'Нет данных о сообщениях за этот стрим.';
   }
 
-  // Теперь ищем в логе выпадений (не удаляется)
   const previousWin = findPreviousWinThisStream(username, historyTimestamp);
   if (previousWin) {
     modalRepeatWarning.style.display = 'block';
@@ -1530,66 +1927,6 @@ async function disconnectFromChat() {
 }
 
 // =========================================================================
-// РОЗЫГРЫШ
-// =========================================================================
-
-function drawWinner() {
-  if (isSpinning) return;
-
-  if (participants.size === 0) {
-    log('Нет участников для розыгрыша.', 'warn');
-    winnerReveal.textContent = 'Список участников пуст — сначала соберите участников в чате.';
-    winnerReveal.classList.add('show');
-    return;
-  }
-
-  const eligible = getEligibleParticipants();
-
-  if (eligible.length === 0) {
-    log('Все участники на кулдауне — розыгрыш невозможен.', 'warn');
-    winnerReveal.textContent = 'Все участники сейчас на кулдауне 🔒 — победителя выбрать нельзя.';
-    winnerReveal.classList.add('show');
-    return;
-  }
-
-  winnerReveal.classList.remove('show');
-
-  const winnerIndex = Math.floor(Math.random() * eligible.length);
-  const [winnerUsername, winnerData] = eligible[winnerIndex];
-
-  isSpinning = true;
-  drawBtn.disabled = true;
-  clearParticipantsBtn.disabled = true;
-  log(`Розыгрыш среди ${eligible.length} участников (режим: ${currentMode === 'elimination' ? 'выбывание' : 'рулетка'})...`, 'info');
-
-  refreshDrawPreview();
-
-  const onDrawFinish = () => {
-    const historyTimestamp = addWinnerToHistory(winnerUsername, winnerData.displayName, currentKeyword, currentChannel || 'неизвестно');
-    log(`Победитель розыгрыша: ${winnerData.displayName}`, 'success');
-
-    winnerReveal.innerHTML = `🎉 Победитель: <strong>${escapeHtml(winnerData.displayName)}</strong> 🎉`;
-    winnerReveal.classList.add('show');
-
-    renderParticipants();
-    renderHistory();
-    refreshDrawPreview();
-
-    isSpinning = false;
-    drawBtn.disabled = false;
-    clearParticipantsBtn.disabled = false;
-
-    openWinnerWatch(winnerUsername, winnerData.displayName, historyTimestamp);
-  };
-
-  if (currentMode === 'elimination') {
-    runElimination(eligible, winnerIndex, onDrawFinish);
-  } else {
-    spinWheelTo(eligible.length, winnerIndex, onDrawFinish);
-  }
-}
-
-// =========================================================================
 // ОБРАБОТЧИКИ КНОПОК
 // =========================================================================
 
@@ -1602,13 +1939,23 @@ noKeywordCheck.addEventListener('change', () => {
 });
 
 modeRouletteRadio.addEventListener('change', () => {
-  if (isSpinning) { modeEliminationRadio.checked = (currentMode === 'elimination'); return; }
+  if (isSpinning) { modeEliminationRadio.checked = (currentMode === 'elimination'); modeCsRadio.checked = (currentMode === 'cs'); return; }
   currentMode = 'roulette';
   updateModeUI();
 });
 modeEliminationRadio.addEventListener('change', () => {
-  if (isSpinning) { modeRouletteRadio.checked = (currentMode === 'roulette'); return; }
+  if (isSpinning) { modeRouletteRadio.checked = (currentMode === 'roulette'); modeCsRadio.checked = (currentMode === 'cs'); return; }
   currentMode = 'elimination';
+  updateModeUI();
+});
+modeCsRadio.addEventListener('change', () => {
+  if (isSpinning) {
+    modeRouletteRadio.checked = (currentMode === 'roulette');
+    modeEliminationRadio.checked = (currentMode === 'elimination');
+    modeCsRadio.checked = (currentMode === 'cs');
+    return;
+  }
+  currentMode = 'cs';
   updateModeUI();
 });
 
@@ -1669,9 +2016,6 @@ function startAutoRefresh() {
 
 // =========================================================================
 // БЕГУЩАЯ СТРОКА ВЫВОДОВ (vivod.txt)
-// Файл vivod.txt должен лежать рядом с index.html на GitHub Pages.
-// Каждая непустая строка (кроме разделителя из дефисов) выводится как
-// отдельная строка тикера, прокручивающегося снизу вверх по кругу.
 // =========================================================================
 
 let dropsTickerLines = [];
@@ -1705,11 +2049,7 @@ function renderDropsTicker() {
     .map(line => `<div class="drops-ticker-line">${escapeHtml(line)}</div>`)
     .join('');
 
-  // Дублируем контент дважды подряд, чтобы прокрутка на 50% высоты была бесшовной (зацикленной).
   dropsTickerTrack.innerHTML = linesHtml + linesHtml;
-
-  // Скорость подстраивается под количество строк, чтобы тикер не был
-  // слишком быстрым/медленным независимо от размера файла.
   const durationSeconds = Math.max(20, dropsTickerLines.length * 2.4);
   dropsTickerTrack.style.animationDuration = durationSeconds + 's';
 }
