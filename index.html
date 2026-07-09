@@ -647,13 +647,16 @@
     animation-duration: 60s;
   }
   .drops-ticker-line {
-  padding: .5rem 1rem;        /* увеличим внутренние отступы */
-  font-size: .95rem;         /* был .74rem — делаем крупнее */
-  font-weight: 900;          /* жирный */
-  line-height: 1.6;          /* межстрочный интервал */
+  padding: .5rem 1rem;
+  font-size: 1.15rem;           /* делаем крупнее (было .95rem) */
+  font-weight: 900;
+  font-family: 'Arial Black', Impact, 'Segoe UI', sans-serif; /* жирный шрифт */
+  line-height: 1.6;
   color: #c9c2dc;
+  text-shadow: 0 0 6px rgba(145,70,255,0.3); /* лёгкое свечение для чёткости */
   border-bottom: 1px solid rgba(255,255,255,.05);
 }
+
   @keyframes dropsTickerScroll{
     from{ transform: translateY(0); }
     to{ transform: translateY(-50%); }
