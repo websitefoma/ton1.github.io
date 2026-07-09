@@ -611,11 +611,11 @@
   /* ============ Бегущая строка выводов (vivod.txt) ============ */
   .drops-ticker-wrap {
   position: fixed;
-  top: 80px;                 /* отступ сверху, чтобы не перекрывать шапку (подберите под свою шапку) */
-  bottom: 16px;              /* прижимаем к низу */
-  left: 40px;                /* сдвиг вправо (было 16px) */
-  width: 540px;
-  max-width: calc(100vw - 60px);
+  top: 100px;                 /* увеличил отступ сверху (было 80px) */
+  bottom: 16px;
+  left: 60px;                 /* сдвиг вправо (было 40px) */
+  width: 620px;               /* шире (было 540px) */
+  max-width: calc(100vw - 80px); /* подстроено под новый left */
   overflow: hidden;
   background: rgba(23,20,31,0.72);
   backdrop-filter: blur(3px);
@@ -623,7 +623,7 @@
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0,0,0,.4);
   z-index: 900;
-  pointer-events: none;       /* чтобы не мешать кликам */
+  pointer-events: none;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
 }
