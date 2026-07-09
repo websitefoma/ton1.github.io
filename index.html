@@ -627,18 +627,23 @@
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
 }
-  .drops-ticker-label{
-    position:absolute;
-    top:0; left:0; right:0;
-    text-align:center;
-    font-size:.72rem;
-    letter-spacing:.5px;
-    text-transform:uppercase;
-    color: var(--twitch-glow);
-    padding:.3rem 0;
-    background: linear-gradient(180deg, rgba(23,20,31,.95), rgba(23,20,31,0));
-    z-index:2;
-  }
+  .drops-ticker-label {
+  font-size: 20px;            /* Увеличиваем размер текста */
+  font-weight: 800;           /* Делает шрифт жирным и заметным */
+  color: #9146ff;             /* Тот самый фиолетовый цвет для текста */
+  text-transform: uppercase;  /* Делает буквы заглавными (ВЫВОДЫ) */
+  display: flex;
+  align-items: center;
+  gap: 8px;                   /* Расстояние между иконкой и текстом */
+  margin-bottom: 12px;        /* Отступ снизу, чтобы не прижималось к элементам */
+}
+
+/* Стили для иконки коробки */
+.drops-ticker-label i {
+  color: #9146ff;             /* Красим иконку в тон текста */
+  /* Неоновое фиолетовое свечение для дополнительного акцента */
+  filter: drop-shadow(0 0 8px rgba(145, 70, 255, 0.6)); 
+}
   .drops-ticker-track{
     display:flex;
     flex-direction: column;
