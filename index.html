@@ -610,22 +610,22 @@
 
   /* ============ Бегущая строка выводов (vivod.txt) ============ */
   .drops-ticker-wrap {
-  position: fixed;
-  top: 100px;                 /* увеличил отступ сверху (было 80px) */
-  bottom: 16px;
-  left: 60px;                 /* сдвиг вправо (было 40px) */
-  width: 620px;               /* шире (было 540px) */
-  max-width: calc(100vw - 80px); /* подстроено под новый left */
-  overflow: hidden;
-  background: rgba(23,20,31,0.72);
-  backdrop-filter: blur(3px);
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.4);
-  z-index: 900;
-  pointer-events: none;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+  position: fixed !important;
+  top: 160px !important;
+  bottom: 16px !important;
+  left: 80px !important;
+  width: 680px !important;
+  max-width: calc(100vw - 100px) !important;
+  overflow: hidden !important;
+  background: rgba(23,20,31,0.72) !important;
+  backdrop-filter: blur(3px) !important;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4) !important;
+  z-index: 900 !important;
+  pointer-events: none !important;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%) !important;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%) !important;
 }
   .drops-ticker-label{
     position:absolute;
