@@ -33,6 +33,77 @@
     min-height: 100vh;
   }
 
+  /* ============ Обёртка: основной контент + сайдбар участников ============ */
+  .app-body-flex{
+    display: flex;
+    align-items: stretch;
+    min-height: 100vh;
+  }
+  .app-main{
+    flex: 1 1 0%;
+    min-width: 0; /* чтобы содержимое не выталкивало сайдбар за пределы экрана */
+  }
+  /* Обычный bootstrap .container скачками меняет max-width на разных breakpoint'ах
+     (540 → 720 → 960 → 1140 → 1320px), из-за чего на промежуточных разрешениях/масштабах
+     то появляются, то исчезают случайные пустые поля. Делаем его резиновым (fluid),
+     чтобы колонки плавно и предсказуемо масштабировались на любом экране. */
+  .app-main > .container,
+  .app-header .container{
+    max-width: 100%;
+    padding-left: clamp(1rem, 2vw, 2rem);
+    padding-right: clamp(1rem, 2vw, 2rem);
+  }
+
+  .participants-sidebar{
+    /* Резиновая ширина: не меньше 260px, не больше 420px, между ними — 22% ширины экрана.
+       Так пропорции остаются адекватными на любом разрешении и при любом масштабе (zoom). */
+    width: clamp(260px, 22vw, 420px);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--panel-bg);
+    border-left: 1px solid var(--border-soft);
+    box-shadow: -8px 0 24px rgba(0,0,0,.35);
+    display: flex;
+    flex-direction: column;
+  }
+  .participants-sidebar-header{
+    background: var(--panel-bg-2);
+    border-bottom: 1px solid var(--border-soft);
+    padding: .75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .participants-sidebar-body{
+    padding: .75rem;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  @media (max-width: 991.98px){
+    /* На маленьких экранах (и при сильном увеличении масштаба) сайдбар не влезет
+       сбоку — переносим его под основной контент на всю ширину. */
+    .app-body-flex{
+      flex-direction: column;
+    }
+    .participants-sidebar{
+      width: 100%;
+      height: auto;
+      max-height: 420px;
+      position: static;
+      border-left: none;
+      border-top: 1px solid var(--border-soft);
+    }
+  }
+
   .app-header{
     background: linear-gradient(90deg, var(--twitch-purple-dark), var(--twitch-purple));
     border-bottom: 1px solid var(--border-soft);
@@ -609,24 +680,34 @@
   }
 
   /* ============ Бегущая строка выводов (vivod.txt) ============ */
+  /* Раньше была fixed-оверлеем поверх контента — на многих разрешениях наезжала
+     на панель "Подключение к чату". Теперь это обычная flex-колонка слева,
+     той же природы, что и сайдбар участников справа: у неё своё место в раскладке,
+     и она физически не может ничего перекрыть. */
   .drops-ticker-wrap {
-  position: fixed;
-  top: 100px;                 /* увеличил отступ сверху (было 80px) */
-  bottom: 16px;
-  left: 60px;                 /* сдвиг вправо (было 40px) */
-  width: 540px;               /* шире (было 540px) */
-  max-width: calc(100vw - 80px); /* подстроено под новый left */
+  width: clamp(220px, 18vw, 340px);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
   overflow: hidden;
   background: rgba(23,20,31,0.72);
   backdrop-filter: blur(3px);
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.4);
-  z-index: 900;
-  pointer-events: none;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+  border-right: 1px solid var(--border-soft);
+  box-shadow: 8px 0 24px rgba(0,0,0,.35);
+  padding: 1rem .75rem;
+  z-index: 2;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%);
 }
+  /* На средних и маленьких экранах в один ряд из тикера + 3 колонок + сайдбара
+     контенту стало бы слишком тесно — прячем декоративный тикер, оставляя
+     основной функционал (те же данные есть в "Истории выпадений" внизу). */
+  @media (max-width: 1399.98px){
+    .drops-ticker-wrap{
+      display: none;
+    }
+  }
   .drops-ticker-label {
   font-size: 20px;            /* Увеличиваем размер текста */
   font-weight: 800;           /* Делает шрифт жирным и заметным */
@@ -647,16 +728,15 @@
   .drops-ticker-track{
     display:flex;
     flex-direction: column;
-    padding-top: 2rem;
     animation: dropsTickerScroll linear infinite;
     animation-duration: 60s;
   }
   .drops-ticker-line {
-  padding: .5rem 1rem;
-  font-size: 1.15rem;           /* делаем крупнее (было .95rem) */
+  padding: .5rem .75rem;
+  font-size: 1rem;
   font-weight: 900;
   font-family: 'Arial Black', Impact, 'Segoe UI', sans-serif; /* жирный шрифт */
-  line-height: 1.6;
+  line-height: 1.5;
   color: #c9c2dc;
   text-shadow: 0 0 6px rgba(145,70,255,0.3); /* лёгкое свечение для чёткости */
   border-bottom: 1px solid rgba(255,255,255,.05);
@@ -741,18 +821,7 @@
 
 <body>
 
-<!-- ============================================================ -->
-<!-- Бегущая строка выводов (из vivod.txt) — декоративный тикер,   -->
-<!-- прокручивается снизу вверх в левом нижнем углу экрана.        -->
-<!-- ============================================================ -->
-<div class="drops-ticker-wrap" id="dropsTickerWrap">
-  <div class="drops-ticker-label"><i class="bi bi-box-seam"></i> Выводы</div>
-  <div class="drops-ticker-track" id="dropsTickerTrack">
-    <div class="drops-ticker-line text-secondary">Загрузка vivod.txt...</div>
-  </div>
-</div>
-
-<!-- ============ Шапка приложения ============ -->
+<!-- ============ Шапка приложения (на всю ширину экрана, сверху) ============ -->
 <header class="app-header py-3 mb-4">
   <div class="container">
     <h1 class="mb-0"><i class="bi bi-controller"></i> Ton1Mark Прокачки</h1>
@@ -760,7 +829,24 @@
   </div>
 </header>
 
-<div class="container pb-5">
+<!-- ============================================================ -->
+<!-- Основной контент + тикер выводов (слева) + сайдбар участников (справа) -->
+<!-- Все три блока — обычные flex-колонки одной высоты, начинаются уже ПОД шапкой, -->
+<!-- ничего не перекрывает друг друга ни на каком разрешении экрана. -->
+<!-- ============================================================ -->
+<div class="app-body-flex">
+
+  <!-- Бегущая строка выводов (из vivod.txt) — декоративная колонка слева -->
+  <aside class="drops-ticker-wrap" id="dropsTickerWrap">
+    <div class="drops-ticker-label"><i class="bi bi-box-seam"></i> Выводы</div>
+    <div class="drops-ticker-track" id="dropsTickerTrack">
+      <div class="drops-ticker-line text-secondary">Загрузка vivod.txt...</div>
+    </div>
+  </aside>
+
+  <div class="app-main">
+
+    <div class="container pb-5">
   <div class="row g-4">
 
     <!-- ============================================================ -->
@@ -811,13 +897,12 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- КОЛОНКА 2: участники + рулетка розыгрыша -->
+    <!-- КОЛОНКА 2: игры для выбора победителей -->
     <!-- ============================================================ -->
     <div class="col-lg-4">
       <div class="panel">
         <div class="panel-header px-3 py-2 d-flex justify-content-between align-items-center">
           <span><i class="bi bi-people"></i> Участники</span>
-          <span class="badge counter-badge" id="participantsCount">0</span>
         </div>
         <div class="p-3">
 
@@ -861,9 +946,6 @@
             <button class="btn btn-outline-secondary" id="clearParticipantsBtn"><i class="bi bi-eraser"></i> Очистить участников</button>
           </div>
 
-          <div id="participantsList" style="max-height:260px; overflow-y:auto;">
-            <div class="text-secondary small" id="participantsEmpty">Пока никто не написал ключевое слово в чате.</div>
-          </div>
         </div>
       </div>
     </div>
@@ -921,7 +1003,27 @@
     </div>
   </div>
 
+    </div>
+    <!-- /.container -->
+  </div>
+  <!-- /.app-main -->
+
+  <!-- ============================================================ -->
+  <!-- Сайдбар "Участники" — отдельная колонка справа, во всю высоту экрана -->
+  <!-- ============================================================ -->
+  <aside class="participants-sidebar">
+    <div class="participants-sidebar-header">
+      <span><i class="bi bi-people-fill"></i> Участники</span>
+      <span class="badge counter-badge" id="participantsCount">0</span>
+    </div>
+    <div class="participants-sidebar-body">
+      <div id="participantsList">
+        <div class="text-secondary small" id="participantsEmpty">Пока никто не написал ключевое слово в чате.</div>
+      </div>
+    </div>
+  </aside>
 </div>
+<!-- /.app-body-flex -->
 
 <!-- ============================================================ -->
 <!-- Модальное окно: открывается после розыгрыша, показывает мини-чат
@@ -2029,7 +2131,7 @@ async function connectToChat() {
 
     if (msgUsername) {
       const stats = messageStats.get(msgUsername) || { keywordCount: 0, otherCount: 0, displayName: msgDisplayName };
-      const containsKeyword = !!currentKeyword && text.includes(currentKeyword);
+      const containsKeyword = !!currentKeyword && text === currentKeyword;
       if (containsKeyword) {
         stats.keywordCount++;
       } else {
@@ -2050,7 +2152,7 @@ async function connectToChat() {
       }
     }
 
-    const qualifies = currentNoKeywordMode || text.includes(currentKeyword);
+    const qualifies = currentNoKeywordMode || text === currentKeyword;
 
     if (qualifies) {
       const username = msgUsername;
