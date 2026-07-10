@@ -57,7 +57,7 @@
   .participants-sidebar{
     /* Резиновая ширина: не меньше 260px, не больше 420px, между ними — 22% ширины экрана.
        Так пропорции остаются адекватными на любом разрешении и при любом масштабе (zoom). */
-    width: clamp(260px, 22vw, 420px);
+    width: clamp(300px, 26vw, 480px);
     flex-shrink: 0;
     position: sticky;
     top: 0;
@@ -685,7 +685,7 @@
      той же природы, что и сайдбар участников справа: у неё своё место в раскладке,
      и она физически не может ничего перекрыть. */
   .drops-ticker-wrap {
-  width: clamp(220px, 18vw, 340px);
+  width: clamp(260px, 21vw, 400px);
   flex-shrink: 0;
   position: sticky;
   top: 0;
@@ -1406,7 +1406,9 @@ function renderHistory() {
     const item = document.createElement('div');
     item.className = 'winner-item';
     const responseHtml = entry.responseTimeSeconds != null
-      ? `<span class="badge bg-success bg-opacity-25 text-success border border-success mt-1"><i class="bi bi-stopwatch"></i> Ответил за ${entry.responseTimeSeconds.toFixed(1)} сек</span>`
+      ? (entry.responseTimeSeconds >= RESPONSE_TIMEOUT_SECONDS
+          ? `<span class="badge bg-danger bg-opacity-25 text-danger border border-danger mt-1"><i class="bi bi-stopwatch"></i> Ответил за ${entry.responseTimeSeconds.toFixed(1)} сек (поздно)</span>`
+          : `<span class="badge bg-success bg-opacity-25 text-success border border-success mt-1"><i class="bi bi-stopwatch"></i> Ответил за ${entry.responseTimeSeconds.toFixed(1)} сек</span>`)
       : `<span class="badge bg-secondary bg-opacity-25 text-secondary border border-secondary mt-1"><i class="bi bi-hourglass-split"></i> Ответ не зафиксирован</span>`;
     const keywordLabel = entry.keyword ? `«${escapeHtml(entry.keyword)}»` : 'без ключевого слова';
     item.innerHTML = `
@@ -2009,13 +2011,23 @@ function stopWinnerWatch(elapsedSeconds) {
   clearInterval(winnerWatch.intervalId);
   winnerWatch.answered = true;
   updateStopwatchDisplay(elapsedSeconds);
-  modalStopwatch.classList.remove('timeout');
-  modalStopwatch.classList.add('stopped');
-  modalStatusText.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> Победитель ответил в чате за <strong>${elapsedSeconds.toFixed(1)} сек</strong>`;
-  modalStatusText.className = 'small mt-1';
+
+  const isLate = winnerWatch.timedOut || elapsedSeconds >= RESPONSE_TIMEOUT_SECONDS;
+
+  if (isLate) {
+    modalStopwatch.classList.remove('stopped');
+    modalStopwatch.classList.add('timeout');
+    modalStatusText.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> Победитель ответил слишком поздно — через <strong>${elapsedSeconds.toFixed(1)} сек</strong> (лимит ${RESPONSE_TIMEOUT_SECONDS} сек)`;
+    modalStatusText.className = 'small text-danger mt-1';
+  } else {
+    modalStopwatch.classList.remove('timeout');
+    modalStopwatch.classList.add('stopped');
+    modalStatusText.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> Победитель ответил в чате за <strong>${elapsedSeconds.toFixed(1)} сек</strong>`;
+    modalStatusText.className = 'small mt-1';
+  }
 
   updateResponseTimeInBoth(winnerWatch.historyTimestamp, elapsedSeconds);
-  log(`${winnerWatch.displayName} ответил(а) в чате через ${elapsedSeconds.toFixed(1)} сек после розыгрыша.`, 'success');
+  log(`${winnerWatch.displayName} ответил(а) в чате через ${elapsedSeconds.toFixed(1)} сек после розыгрыша.`, isLate ? 'warn' : 'success');
 }
 
 winnerChatModalEl.addEventListener('hidden.bs.modal', () => {
